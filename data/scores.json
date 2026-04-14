@@ -1,30 +1,590 @@
 [
   {
-    "date": "2026-04-08",
+    "date": "2025-08-29",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 16.8,
+    "h1_avg_adx": 31.24,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
-    "score": 1.3
+    "score": 2.3
   },
   {
-    "date": "2026-04-09",
+    "date": "2025-09-01",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 16.09,
+    "h1_avg_adx": 40.21,
+    "h4_pct20": 60.0,
+    "h4_pct30": 0.0,
+    "score": 65.8
+  },
+  {
+    "date": "2025-09-02",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 38.44,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 82.8
+  },
+  {
+    "date": "2025-09-03",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 35.43,
+    "h4_pct20": 100.0,
+    "h4_pct30": 66.7,
+    "score": 100.0
+  },
+  {
+    "date": "2025-09-04",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 33.6,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2025-09-05",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 19.59,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 72.1
+  },
+  {
+    "date": "2025-09-08",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 22.26,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 81.5
+  },
+  {
+    "date": "2025-09-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 29.0,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2025-09-10",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 25.61,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 92.0
+  },
+  {
+    "date": "2025-09-11",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.97,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 51.9
+  },
+  {
+    "date": "2025-09-12",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.54,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 49.6
+  },
+  {
+    "date": "2025-09-15",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 11.85,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 31.6
+  },
+  {
+    "date": "2025-09-16",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 17.55,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 63.9
+  },
+  {
+    "date": "2025-09-17",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 21.25,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 78.1
+  },
+  {
+    "date": "2025-09-18",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.57,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 59.7
+  },
+  {
+    "date": "2025-09-19",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.88,
+    "h4_pct20": 100.0,
+    "h4_pct30": 50.0,
+    "score": 57.8
+  },
+  {
+    "date": "2025-09-22",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 24.51,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 59.1
+  },
+  {
+    "date": "2025-09-23",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 38.26,
+    "h4_pct20": 100.0,
+    "h4_pct30": 50.0,
+    "score": 100.0
+  },
+  {
+    "date": "2025-09-24",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 35.28,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2025-09-25",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 22.3,
+    "h4_pct20": 100.0,
+    "h4_pct30": 16.7,
+    "score": 59.0
+  },
+  {
+    "date": "2025-09-26",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.51,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 29.1
+  },
+  {
+    "date": "2025-09-29",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.76,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 30.1
+  },
+  {
+    "date": "2025-09-30",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 25.49,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 61.1
+  },
+  {
+    "date": "2025-10-01",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 24.79,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 59.7
+  },
+  {
+    "date": "2025-10-02",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 20.87,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 51.2
+  },
+  {
+    "date": "2025-10-03",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.38,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 39.2
+  },
+  {
+    "date": "2025-10-06",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.12,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 38.4
+  },
+  {
+    "date": "2025-10-07",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 27.86,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 65.6
+  },
+  {
+    "date": "2025-10-08",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 32.18,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 73.1
+  },
+  {
+    "date": "2025-10-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 37.37,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 81.2
+  },
+  {
+    "date": "2025-10-10",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 28.58,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 66.9
+  },
+  {
+    "date": "2025-10-13",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 37.71,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 81.7
+  },
+  {
+    "date": "2025-10-14",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 26.01,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 62.1
+  },
+  {
+    "date": "2025-10-15",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.7,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 37.1
+  },
+  {
+    "date": "2025-10-16",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 11.46,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.6
+  },
+  {
+    "date": "2025-10-17",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.44,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.1
+  },
+  {
+    "date": "2025-10-20",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 19.82,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.5
+  },
+  {
+    "date": "2025-10-21",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.35,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
     "score": 1.2
   },
   {
-    "date": "2026-04-10",
+    "date": "2025-10-22",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 11.25,
+    "h1_avg_adx": 24.71,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
-    "score": 0.5
+    "score": 1.9
   },
   {
-    "date": "2026-04-13",
+    "date": "2025-10-23",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 28.84,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.1
+  },
+  {
+    "date": "2025-10-24",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 21.35,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.7
+  },
+  {
+    "date": "2025-10-27",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.24,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.0
+  },
+  {
+    "date": "2025-10-28",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 24.86,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.9
+  },
+  {
+    "date": "2025-10-29",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 25.48,
+    "h4_pct20": 83.3,
+    "h4_pct30": 0.0,
+    "score": 55.7
+  },
+  {
+    "date": "2025-10-30",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 19.12,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 46.9
+  },
+  {
+    "date": "2025-10-31",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.22,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.0
+  },
+  {
+    "date": "2025-11-03",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 8.07,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2025-11-04",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 11.05,
+    "h4_pct20": 33.3,
+    "h4_pct30": 0.0,
+    "score": 9.2
+  },
+  {
+    "date": "2025-11-05",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 20.44,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 50.1
+  },
+  {
+    "date": "2025-11-06",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 17.78,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 43.3
+  },
+  {
+    "date": "2025-11-07",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.28,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 28.1
+  },
+  {
+    "date": "2025-11-10",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.6,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.9
+  },
+  {
+    "date": "2025-11-11",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 31.34,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.3
+  },
+  {
+    "date": "2025-11-12",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 30.85,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.2
+  },
+  {
+    "date": "2025-11-13",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 32.52,
+    "h4_pct20": 16.7,
+    "h4_pct30": 0.0,
+    "score": 30.1
+  },
+  {
+    "date": "2025-11-14",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 30.92,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.2
+  },
+  {
+    "date": "2025-11-17",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 27.88,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.1
+  },
+  {
+    "date": "2025-11-18",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 27.88,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.1
+  },
+  {
+    "date": "2025-11-19",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 23.48,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.8
+  },
+  {
+    "date": "2025-11-20",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.7,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.2
+  },
+  {
+    "date": "2025-11-21",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.75,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.1
+  },
+  {
+    "date": "2025-11-24",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 6.08,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2025-11-25",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.47,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.4
+  },
+  {
+    "date": "2025-11-26",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 23.93,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.8
+  },
+  {
+    "date": "2025-11-27",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 20.99,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.6
+  },
+  {
+    "date": "2025-11-28",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.46,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.1
+  },
+  {
+    "date": "2025-12-01",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.93,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.1
+  },
+  {
+    "date": "2025-12-02",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.77,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.2
+  },
+  {
+    "date": "2025-12-03",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.27,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.2
+  },
+  {
+    "date": "2025-12-04",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 10.75,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.4
+  },
+  {
+    "date": "2025-12-05",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 7.54,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2025-12-08",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 9.28,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2025-12-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.7,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.9
+  },
+  {
+    "date": "2025-12-10",
     "symbol": "XAUUSD",
     "h1_avg_adx": 11.02,
     "h4_pct20": 0.0,
@@ -32,9 +592,713 @@
     "score": 0.5
   },
   {
+    "date": "2025-12-11",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 10.6,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.4
+  },
+  {
+    "date": "2025-12-12",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.3,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.4
+  },
+  {
+    "date": "2025-12-15",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.78,
+    "h4_pct20": 50.0,
+    "h4_pct30": 0.0,
+    "score": 32.5
+  },
+  {
+    "date": "2025-12-16",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 20.29,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 49.8
+  },
+  {
+    "date": "2025-12-17",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.74,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 37.2
+  },
+  {
+    "date": "2025-12-18",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.09,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 35.0
+  },
+  {
+    "date": "2025-12-19",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.75,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 30.1
+  },
+  {
+    "date": "2025-12-22",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.75,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 30.1
+  },
+  {
+    "date": "2025-12-23",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 41.28,
+    "h4_pct20": 100.0,
+    "h4_pct30": 66.7,
+    "score": 100.0
+  },
+  {
+    "date": "2025-12-24",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 41.71,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2025-12-25",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 22.49,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 82.3
+  },
+  {
+    "date": "2025-12-26",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.91,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 51.6
+  },
+  {
+    "date": "2025-12-29",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 30.16,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2025-12-30",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 40.62,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2025-12-31",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 36.24,
+    "h4_pct20": 100.0,
+    "h4_pct30": 50.0,
+    "score": 99.4
+  },
+  {
+    "date": "2026-01-01",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 31.62,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 72.2
+  },
+  {
+    "date": "2026-01-02",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 28.8,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 67.3
+  },
+  {
+    "date": "2026-01-05",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 22.27,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.7
+  },
+  {
+    "date": "2026-01-06",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 31.59,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.3
+  },
+  {
+    "date": "2026-01-07",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 31.82,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.3
+  },
+  {
+    "date": "2026-01-08",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 20.45,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.6
+  },
+  {
+    "date": "2026-01-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.66,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.3
+  },
+  {
+    "date": "2026-01-12",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.08,
+    "h4_pct20": 33.3,
+    "h4_pct30": 0.0,
+    "score": 25.5
+  },
+  {
+    "date": "2026-01-13",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 33.48,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 75.2
+  },
+  {
+    "date": "2026-01-14",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 21.4,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 52.4
+  },
+  {
+    "date": "2026-01-15",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.94,
+    "h4_pct20": 100.0,
+    "h4_pct30": 33.3,
+    "score": 47.7
+  },
+  {
+    "date": "2026-01-16",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.83,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 46.1
+  },
+  {
+    "date": "2026-01-19",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 36.43,
+    "h4_pct20": 16.7,
+    "h4_pct30": 0.0,
+    "score": 32.6
+  },
+  {
+    "date": "2026-01-20",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 44.98,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 85.0
+  },
+  {
+    "date": "2026-01-21",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 52.64,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 85.0
+  },
+  {
+    "date": "2026-01-22",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 42.42,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 85.0
+  },
+  {
+    "date": "2026-01-23",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 26.52,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 94.6
+  },
+  {
+    "date": "2026-01-26",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 33.32,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-01-27",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 36.15,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-01-28",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 27.7,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 97.9
+  },
+  {
+    "date": "2026-01-29",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 39.63,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-01-30",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 36.66,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-02-02",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 52.05,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-02-03",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 46.22,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-02-04",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 24.4,
+    "h4_pct20": 100.0,
+    "h4_pct30": 50.0,
+    "score": 73.6
+  },
+  {
+    "date": "2026-02-05",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.31,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 44.7
+  },
+  {
+    "date": "2026-02-06",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 23.8,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 57.7
+  },
+  {
+    "date": "2026-02-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.87,
+    "h4_pct20": 16.7,
+    "h4_pct30": 0.0,
+    "score": 12.5
+  },
+  {
+    "date": "2026-02-10",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 11.4,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.6
+  },
+  {
+    "date": "2026-02-11",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 9.74,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2026-02-12",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 9.53,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2026-02-13",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.77,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.3
+  },
+  {
+    "date": "2026-02-16",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 7.83,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2026-02-17",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 22.74,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.8
+  },
+  {
+    "date": "2026-02-18",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 31.93,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.3
+  },
+  {
+    "date": "2026-02-19",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 21.73,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.7
+  },
+  {
+    "date": "2026-02-20",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.07,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.4
+  },
+  {
+    "date": "2026-02-23",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 22.74,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.8
+  },
+  {
+    "date": "2026-02-24",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 32.45,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.3
+  },
+  {
+    "date": "2026-02-25",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 21.42,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.7
+  },
+  {
+    "date": "2026-02-26",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 12.67,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.8
+  },
+  {
+    "date": "2026-02-27",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.19,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.0
+  },
+  {
+    "date": "2026-03-02",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 34.26,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.4
+  },
+  {
+    "date": "2026-03-03",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 30.08,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.2
+  },
+  {
+    "date": "2026-03-04",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 29.76,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.2
+  },
+  {
+    "date": "2026-03-05",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 26.38,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.0
+  },
+  {
+    "date": "2026-03-06",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 27.13,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 2.0
+  },
+  {
+    "date": "2026-03-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.08,
+    "h4_pct20": 83.3,
+    "h4_pct30": 0.0,
+    "score": 34.9
+  },
+  {
+    "date": "2026-03-10",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.93,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 46.4
+  },
+  {
+    "date": "2026-03-11",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.39,
+    "h4_pct20": 33.3,
+    "h4_pct30": 0.0,
+    "score": 16.5
+  },
+  {
+    "date": "2026-03-12",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 12.26,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.7
+  },
+  {
+    "date": "2026-03-13",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 20.08,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.6
+  },
+  {
+    "date": "2026-03-16",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 36.6,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 80.0
+  },
+  {
+    "date": "2026-03-17",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 28.27,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 66.3
+  },
+  {
+    "date": "2026-03-18",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.99,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 46.5
+  },
+  {
+    "date": "2026-03-19",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 29.02,
+    "h4_pct20": 100.0,
+    "h4_pct30": 83.3,
+    "score": 95.9
+  },
+  {
+    "date": "2026-03-20",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 36.39,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-03-23",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 33.98,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-03-24",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 29.05,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 100.0
+  },
+  {
+    "date": "2026-03-25",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 18.69,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 68.6
+  },
+  {
+    "date": "2026-03-26",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 11.93,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 32.4
+  },
+  {
+    "date": "2026-03-27",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.14,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 41.3
+  },
+  {
+    "date": "2026-03-30",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.62,
+    "h4_pct20": 100.0,
+    "h4_pct30": 100.0,
+    "score": 50.0
+  },
+  {
+    "date": "2026-03-31",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 15.71,
+    "h4_pct20": 100.0,
+    "h4_pct30": 33.3,
+    "score": 43.3
+  },
+  {
+    "date": "2026-04-01",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 25.07,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 60.3
+  },
+  {
+    "date": "2026-04-02",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 34.3,
+    "h4_pct20": 100.0,
+    "h4_pct30": 0.0,
+    "score": 76.5
+  },
+  {
+    "date": "2026-04-03",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 19.52,
+    "h4_pct20": 66.7,
+    "h4_pct30": 0.0,
+    "score": 39.1
+  },
+  {
+    "date": "2026-04-06",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 8.28,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2026-04-07",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 9.4,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.1
+  },
+  {
+    "date": "2026-04-08",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 13.39,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.9
+  },
+  {
+    "date": "2026-04-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.74,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.1
+  },
+  {
+    "date": "2026-04-10",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 10.71,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.4
+  },
+  {
+    "date": "2026-04-13",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 10.95,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 0.5
+  },
+  {
     "date": "2026-04-14",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 13.21,
+    "h1_avg_adx": 13.17,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
     "score": 0.9

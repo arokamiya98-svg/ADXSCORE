@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XAUUSD ADXスコア | Gold Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card-bg: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --gold: #d4af37;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 6px;
+  }
+  .updated {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  h2 {
+    font-size: 1rem;
+    color: var(--muted);
+    margin: 28px 0 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── 直近5日カード ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .date { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+  .dow  { font-weight: 700; color: var(--text); }
+  .score-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .score-num   { font-size: 1.6rem; font-weight: 800; color: #000; line-height: 1; }
+  .score-label { font-size: 0.65rem; font-weight: 700; color: #000; margin-top: 2px; }
+  .details { text-align: left; }
+  .detail-row {
+    display: flex; justify-content: space-between;
+    font-size: 0.72rem;
+    border-top: 1px solid var(--border);
+    padding: 4px 0;
+  }
+  .detail-key { color: var(--muted); }
+  .detail-val { font-weight: 600; }
+
+  /* ── 週次グラフ ── */
+  .chart-wrap {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  /* ── 週次テーブル ── */
+  table { width: 100%; border-collapse: collapse; }
+  th, td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+    text-align: left;
+  }
+  th { color: var(--muted); font-weight: 600; background: var(--card-bg); }
+  .wk-label { font-weight: 700; color: var(--gold); width: 80px; }
+  .badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #000;
+    display: inline-block;
+  }
+  .day-dots { display: flex; gap: 6px; flex-wrap: wrap; }
+  .day-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #000;
+    display: flex; align-items: center; justify-content: center;
+    cursor: default;
+  }
+  footer {
+    margin-top: 40px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+<h1>⚡ XAUUSD ADX Score Dashboard</h1>
+<div class="updated">最終更新: 2026-04-14 10:38 JST</div>
+
+<h2>📅 直近5営業日</h2>
+<div class="cards">
+        <div class="card">
+          <div class="date">2026-04-10 <span class="dow">Fri</span></div>
+          <div class="score-circle" style="background:#d50000">
+            <span class="score-num">0.5</span>
+            <span class="score-label">NG</span>
+          </div>
+          <div class="details">
+            <div class="detail-row">
+              <span class="detail-key">H1 avg ADX</span>
+              <span class="detail-val">11.11</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥20</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥30</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="date">2026-04-11 <span class="dow">Sat</span></div>
+          <div class="score-circle" style="background:#d50000">
+            <span class="score-num">0.1</span>
+            <span class="score-label">NG</span>
+          </div>
+          <div class="details">
+            <div class="detail-row">
+              <span class="detail-key">H1 avg ADX</span>
+              <span class="detail-val">7.86</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥20</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥30</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="date">2026-04-12 <span class="dow">Sun</span></div>
+          <div class="score-circle" style="background:#d50000">
+            <span class="score-num">0.1</span>
+            <span class="score-label">NG</span>
+          </div>
+          <div class="details">
+            <div class="detail-row">
+              <span class="detail-key">H1 avg ADX</span>
+              <span class="detail-val">7.21</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥20</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥30</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="date">2026-04-13 <span class="dow">Mon</span></div>
+          <div class="score-circle" style="background:#d50000">
+            <span class="score-num">0.5</span>
+            <span class="score-label">NG</span>
+          </div>
+          <div class="details">
+            <div class="detail-row">
+              <span class="detail-key">H1 avg ADX</span>
+              <span class="detail-val">11.0</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥20</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥30</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="date">2026-04-14 <span class="dow">Tue</span></div>
+          <div class="score-circle" style="background:#d50000">
+            <span class="score-num">0.8</span>
+            <span class="score-label">NG</span>
+          </div>
+          <div class="details">
+            <div class="detail-row">
+              <span class="detail-key">H1 avg ADX</span>
+              <span class="detail-val">12.63</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥20</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">H4 ADX≥30</span>
+              <span class="detail-val">0.0%</span>
+            </div>
+          </div>
+        </div></div>
+
+<h2>📈 週次スコア推移（月曜起算）</h2>
+<div class="chart-wrap">
+  <canvas id="weekChart" height="100"></canvas>
+</div>
+
+<h2>🗂 週次サマリー</h2>
+<table>
+  <thead><tr><th>週</th><th>平均スコア</th><th>日次ドット</th></tr></thead>
+  <tbody>
+        <tr>
+          <td class="wk-label">W04/06</td>
+          <td><span class="badge" style="background:#d50000">0.2 NG</span></td>
+          <td class="day-dots"><span class="day-dot" style="background:#d50000" title="2026-04-10: 0.5">0.5</span><span class="day-dot" style="background:#d50000" title="2026-04-11: 0.1">0.1</span><span class="day-dot" style="background:#d50000" title="2026-04-12: 0.1">0.1</span></td>
+        </tr>
+        <tr>
+          <td class="wk-label">W04/13</td>
+          <td><span class="badge" style="background:#d50000">0.7 NG</span></td>
+          <td class="day-dots"><span class="day-dot" style="background:#d50000" title="2026-04-13: 0.5">0.5</span><span class="day-dot" style="background:#d50000" title="2026-04-14: 0.8">0.8</span></td>
+        </tr></tbody>
+</table>
+
+<footer>
+  XAUUSD H1(ADX28) / H4(ADX30) | ADXスコア設計書準拠 | Auto-generated by GitHub Actions
+</footer>
+
+<script>
+const ctx = document.getElementById('weekChart').getContext('2d');
+const weekLabels = ["W04/06", "W04/13"];
+const weekAvgs   = [0.2, 0.7];
+
+const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+gradient.addColorStop(0, 'rgba(212,175,55,0.4)');
+gradient.addColorStop(1, 'rgba(212,175,55,0)');
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: weekLabels,
+    datasets: [{
+      label: '週平均ADXスコア',
+      data: weekAvgs,
+      borderColor: '#d4af37',
+      backgroundColor: gradient,
+      borderWidth: 2.5,
+      pointBackgroundColor: weekAvgs.map(v =>
+        v >= 80 ? '#00c853' : v >= 60 ? '#64dd17' : v >= 40 ? '#ffd600' : v >= 24 ? '#ff6d00' : '#d50000'
+      ),
+      pointRadius: 5,
+      tension: 0.35,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.y} pt`
+        }
+      }
+    },
+    scales: {
+      y: {
+        min: 0, max: 100,
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e', stepSize: 20 }
+      },
+      x: {
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e' }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>

@@ -163,7 +163,14 @@ def calc_scores_5days(h1_adx_series: list[dict], h4_adx_series: list[dict]) -> l
         date_str = row["datetime"][:10]
         h1_by_date.setdefault(date_str, []).append(row["adx"])
 
-    all_dates = sorted(set(h4_by_date.keys()) & set(h1_by_date.keys()))
+    def is_weekday(date_str: str) -> bool:
+        """土日を除外（月=0 〜 金=4）"""
+        return datetime.strptime(date_str, "%Y-%m-%d").weekday() < 5
+
+    all_dates = sorted(
+        d for d in set(h4_by_date.keys()) & set(h1_by_date.keys())
+        if is_weekday(d)
+    )
     recent_5  = all_dates[-5:]
 
     scores = []
@@ -201,7 +208,19 @@ def save_scores(records: list[dict]):
     os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
     seen = {}
     for r in records:
-        key = f"{r['date']}_{r.get('symbol','XAUUSD')}"
+        # symbolフィールドがない古いデータを補完
+        if "symbol" not in r:
+            r["symbol"] = "XAUUSD"
+        # 異常値除去（h1_avg_adx > 100 は明らかにバグデータ）
+        if r.get("h1_avg_adx", 0) > 100:
+            print(f"  [SKIP] 異常データ除去: {r['date']} h1_avg_adx={r['h1_avg_adx']}")
+            continue
+        # 土日データを除去
+        dt = datetime.strptime(r["date"], "%Y-%m-%d")
+        if dt.weekday() >= 5:
+            print(f"  [SKIP] 土日データ除去: {r['date']} ({['月','火','水','木','金','土','日'][dt.weekday()]})")
+            continue
+        key = f"{r['date']}_{r['symbol']}"
         seen[key] = r
     merged = sorted(seen.values(), key=lambda x: x["date"])
     with open(DATA_PATH, "w", encoding="utf-8") as f:

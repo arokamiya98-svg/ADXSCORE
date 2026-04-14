@@ -1,27 +1,27 @@
 [
   {
+    "date": "2026-04-08",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.82,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.3
+  },
+  {
+    "date": "2026-04-09",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 16.1,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 1.2
+  },
+  {
     "date": "2026-04-10",
     "symbol": "XAUUSD",
     "h1_avg_adx": 11.26,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
     "score": 0.5
-  },
-  {
-    "date": "2026-04-11",
-    "symbol": "XAUUSD",
-    "h1_avg_adx": 7.92,
-    "h4_pct20": 0.0,
-    "h4_pct30": 0.0,
-    "score": 0.1
-  },
-  {
-    "date": "2026-04-12",
-    "symbol": "XAUUSD",
-    "h1_avg_adx": 7.25,
-    "h4_pct20": 0.0,
-    "h4_pct30": 0.0,
-    "score": 0.1
   },
   {
     "date": "2026-04-13",

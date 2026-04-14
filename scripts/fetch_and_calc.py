@@ -1,6 +1,10 @@
 """
-fetch_and_calc.py
+fetch_and_calc.py v4
 XAUUSD H1/H4 ADXスコア計算 → data/scores.json に追記
+
+【ADX実装】MT5 / TradingView と一致する正確なWilder ADX
+  - TR/+DM/-DM はWilder合計型平滑（初期値=period本の単純合計）
+  - ADX はDXをEMA型Wilder平滑（初期値=period本のDXの平均）
 """
 
 import os
@@ -17,8 +21,9 @@ DATA_PATH = "data/scores.json"
 ADX_PERIOD_H1 = 28
 ADX_PERIOD_H4 = 30
 
-H1_BARS = 200
-H4_BARS = 60
+# period×4以上を確保（ウォームアップ分）
+H1_BARS = 300
+H4_BARS = 150
 
 JST = timezone(timedelta(hours=9))
 
@@ -41,72 +46,102 @@ def fetch_ohlcv(interval: str, outputsize: int) -> list[dict]:
     return data["values"]
 
 
-# ── Wilder's ADX 計算（修正版） ───────────────────────
+# ── Wilder's ADX（MT5 / TradingView 準拠）────────────
 def calc_adx(bars: list[dict], period: int) -> list[dict]:
+    """
+    正確なWilder ADX計算。
+
+    TR/+DM/-DM の平滑化:
+      初期値 = sum(lst[0:period])  ← Wilderオリジナル（合計型）
+      以降   = S - S/period + val
+
+    ADX（DXの平滑化）:
+      初期値 = mean(DX[0:period])  ← EMA型
+      以降   = (S*(period-1) + val) / period
+    """
     n = len(bars)
-    highs  = [float(b["high"])  for b in bars]
-    lows   = [float(b["low"])   for b in bars]
-    closes = [float(b["close"]) for b in bars]
+    H = [float(b["high"])  for b in bars]
+    L = [float(b["low"])   for b in bars]
+    C = [float(b["close"]) for b in bars]
+    D = [b["datetime"]     for b in bars]
 
-    # i=1始まりで TR / +DM / -DM を計算
-    tr_list, pdm_list, mdm_list, dt_list = [], [], [], []
+    if n < period * 3:
+        raise ValueError(f"バー数不足: {n}本（{period*3}本以上必要）")
+
+    # Step1: 生のTR / +DM / -DM（長さ n-1）
+    TR, PDM, MDM = [], [], []
     for i in range(1, n):
-        h, l, pc = highs[i], lows[i], closes[i - 1]
-        tr   = max(h - l, abs(h - pc), abs(l - pc))
-        up   = highs[i] - highs[i - 1]
-        down = lows[i - 1] - lows[i]
-        pdm  = up   if (up > down and up > 0)   else 0.0
-        mdm  = down if (down > up and down > 0) else 0.0
-        tr_list.append(tr)
-        pdm_list.append(pdm)
-        mdm_list.append(mdm)
-        dt_list.append(bars[i]["datetime"])  # bars[i] のみ使用（i+1ではない）
+        tr  = max(H[i]-L[i], abs(H[i]-C[i-1]), abs(L[i]-C[i-1]))
+        up  = H[i] - H[i-1]
+        dn  = L[i-1] - L[i]
+        pdm = up if (up > dn and up > 0) else 0.0
+        mdm = dn if (dn > up and dn > 0) else 0.0
+        TR.append(tr); PDM.append(pdm); MDM.append(mdm)
 
-    # Wilder平滑化
-    def wilder(lst, p):
+    # Step2: Wilder合計型平滑（TR / +DM / -DM 用）
+    def wilder_sum(lst, p):
+        """初期値=合計、以降= S - S/p + val（MT5標準）"""
         if len(lst) < p:
             return [None] * len(lst)
-        out = [None] * (p - 1)
-        out.append(sum(lst[:p]))
+        result = [None] * (p - 1)
+        s = sum(lst[:p])
+        result.append(s)
         for v in lst[p:]:
-            out.append(out[-1] - out[-1] / p + v)
-        return out
+            s = s - s / p + v
+            result.append(s)
+        return result
 
-    atr_w = wilder(tr_list,  period)
-    pdm_w = wilder(pdm_list, period)
-    mdm_w = wilder(mdm_list, period)
+    sTR  = wilder_sum(TR,  period)
+    sPDM = wilder_sum(PDM, period)
+    sMDM = wilder_sum(MDM, period)
 
-    # DX リスト作成
+    # Step3: +DI / -DI → DX
     dx_list, dx_dt, dx_pdi, dx_mdi = [], [], [], []
-    for i in range(len(atr_w)):
-        if atr_w[i] is None or atr_w[i] == 0:
+    for i in range(len(sTR)):
+        if sTR[i] is None or sTR[i] <= 0:
             continue
-        pdi = 100 * pdm_w[i] / atr_w[i]
-        mdi = 100 * mdm_w[i] / atr_w[i]
-        dx  = 100 * abs(pdi - mdi) / (pdi + mdi) if (pdi + mdi) > 0 else 0.0
+        pdi   = 100.0 * sPDM[i] / sTR[i]
+        mdi   = 100.0 * sMDM[i] / sTR[i]
+        denom = pdi + mdi
+        dx    = 100.0 * abs(pdi - mdi) / denom if denom > 0 else 0.0
         dx_list.append(dx)
-        dx_dt.append(dt_list[i])
+        dx_dt.append(D[i + 1])   # TR[i] は bars[i+1] に対応
         dx_pdi.append(pdi)
         dx_mdi.append(mdi)
 
-    # DX を Wilder平滑化 → ADX
-    adx_w = wilder(dx_list, period)
+    if len(dx_list) < period:
+        raise ValueError(f"DX数不足: {len(dx_list)}本")
 
+    # Step4: ADX = DXをEMA型Wilder平滑（初期値=平均）
+    def wilder_ema(lst, p):
+        """初期値=平均、以降= (S*(p-1) + val) / p（ADX標準）"""
+        if len(lst) < p:
+            return [None] * len(lst)
+        result = [None] * (p - 1)
+        s = sum(lst[:p]) / p
+        result.append(s)
+        for v in lst[p:]:
+            s = (s * (p - 1) + v) / p
+            result.append(s)
+        return result
+
+    adx_list = wilder_ema(dx_list, period)
+
+    # Step5: 結果まとめ
     out = []
-    for i, adx_val in enumerate(adx_w):
+    for i, adx_val in enumerate(adx_list):
         if adx_val is None:
             continue
         out.append({
             "datetime":  dx_dt[i],
-            "adx":       adx_val,
-            "plus_di":   dx_pdi[i],
-            "minus_di":  dx_mdi[i],
+            "adx":       round(adx_val, 4),
+            "plus_di":   round(dx_pdi[i], 4),
+            "minus_di":  round(dx_mdi[i], 4),
         })
-
     return out
 
 
-# ── ADXスコア計算 ────────────────────────────────────
+# ── ADXスコア計算（設計書準拠）──────────────────────
 def adx_score(h1_avg_adx: float, h4_pct_above20: float, h4_pct_above30: float) -> float:
     h1_norm = max(0.0, min(100.0, (h1_avg_adx - 10) / 30 * 100))
     a     = max(0.1, h1_norm)
@@ -145,13 +180,12 @@ def calc_scores_5days(h1_adx_series: list[dict], h4_adx_series: list[dict]) -> l
 
         scores.append({
             "date":       date_str,
-            "symbol":     "XAUUSD",   # 将来の複数銘柄対応用
+            "symbol":     "XAUUSD",
             "h1_avg_adx": round(h1_avg, 2),
             "h4_pct20":   round(h4_pct20, 1),
             "h4_pct30":   round(h4_pct30, 1),
             "score":      score,
         })
-
     return scores
 
 
@@ -167,39 +201,60 @@ def save_scores(records: list[dict]):
     os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
     seen = {}
     for r in records:
-        seen[r["date"]] = r
+        key = f"{r['date']}_{r.get('symbol','XAUUSD')}"
+        seen[key] = r
     merged = sorted(seen.values(), key=lambda x: x["date"])
     with open(DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
     print(f"[OK] scores.json に {len(merged)} 件保存")
 
 
+# ── 妥当性チェック ────────────────────────────────────
+def validate_adx(series: list[dict], label: str):
+    vals = [r["adx"] for r in series[-20:]]
+    avg  = sum(vals) / len(vals)
+    mn, mx = min(vals), max(vals)
+    print(f"  {label}: 直近20本 avg={avg:.2f} min={mn:.2f} max={mx:.2f}")
+    if avg > 100:
+        raise ValueError(
+            f"[ERROR] {label} ADX平均値={avg:.2f} が異常です（100超）。"
+            "バー数不足かAPIデータ異常の可能性があります。"
+        )
+
+
 # ── メイン ───────────────────────────────────────────
 def main():
-    print("=== fetch_and_calc.py 開始 ===")
+    print("=== fetch_and_calc.py v4 開始 ===")
     print(f"実行時刻: {datetime.now(JST).strftime('%Y-%m-%d %H:%M JST')}")
 
-    print("H1データ取得中...")
+    print(f"H1データ取得中... ({H1_BARS}本)")
     h1_bars = fetch_ohlcv("1h", H1_BARS)
     print(f"  → {len(h1_bars)} 本取得")
 
-    print("H4データ取得中...")
+    print(f"H4データ取得中... ({H4_BARS}本)")
     h4_bars = fetch_ohlcv("4h", H4_BARS)
     print(f"  → {len(h4_bars)} 本取得")
 
     print("ADX計算中...")
     h1_adx = calc_adx(h1_bars, ADX_PERIOD_H1)
     h4_adx = calc_adx(h4_bars, ADX_PERIOD_H4)
-    print(f"  H1 ADX: {len(h1_adx)} 本 / H4 ADX: {len(h4_adx)} 本")
+    print(f"  H1 ADX: {len(h1_adx)}本 / H4 ADX: {len(h4_adx)}本")
 
-    if not h1_adx or not h4_adx:
-        raise RuntimeError("ADX計算結果が空です。バー数が不足しています。")
+    validate_adx(h1_adx, "H1(28)")
+    validate_adx(h4_adx, "H4(30)")
 
     print("スコア計算中（直近5営業日）...")
     new_scores = calc_scores_5days(h1_adx, h4_adx)
+
+    if not new_scores:
+        print("[WARN] スコアが空です")
+        return
+
     for s in new_scores:
-        print(f"  {s['date']}: score={s['score']}  H1avg={s['h1_avg_adx']}  "
-              f"H4_20={s['h4_pct20']}%  H4_30={s['h4_pct30']}%")
+        print(f"  {s['date']}: score={s['score']:5.1f}  "
+              f"H1avg={s['h1_avg_adx']:5.2f}  "
+              f"H4_20={s['h4_pct20']:5.1f}%  "
+              f"H4_30={s['h4_pct30']:5.1f}%")
 
     existing = load_scores()
     save_scores(existing + new_scores)

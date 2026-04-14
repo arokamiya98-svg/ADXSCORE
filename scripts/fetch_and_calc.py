@@ -1,7 +1,7 @@
-“””
+””
 fetch_and_calc.py
 XAUUSD H1/H4 ADXスコア計算 → data/scores.json に追記
-“””
+””
 
 import os
 import json

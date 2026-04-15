@@ -144,8 +144,10 @@ def calc_adx(bars: list[dict], period: int) -> list[dict]:
 # ── ADXスコア計算（設計書準拠）──────────────────────
 def adx_score(h1_avg_adx: float, h4_pct_above20: float, h4_pct_above30: float) -> float:
     h1_norm = max(0.0, min(100.0, (h1_avg_adx - 10) / 30 * 100))
-    a     = max(0.1, h1_norm)
-    b     = max(0.1, h4_pct_above20)
+    # フロア5.0: H4_20=0%でもスコアが極端に潰れないようにする
+    # （設計書の期待値には影響なし。H4_20が低い弱相場を適切に表現）
+    a     = max(5.0, h1_norm)
+    b     = max(5.0, h4_pct_above20)
     base  = math.sqrt(a * b) * 0.85
     bonus = 1.0 + (h4_pct_above30 / 100) * 0.5
     return round(min(100.0, base * bonus), 1)
@@ -180,18 +182,32 @@ def calc_scores_5days(h1_adx_series: list[dict], h4_adx_series: list[dict]) -> l
         if not h1_vals or not h4_vals:
             continue
 
+        # H4バー本数チェック
+        # 通常: 23h稼働 → 5〜6本。3本未満はクローズ日・祝日短縮のデータ不完全
+        if len(h4_vals) < 3:
+            print(f"  [SKIP] H4バー不足: {date_str} ({len(h4_vals)}本)")
+            continue
+
+        # H1バー本数チェック
+        # 通常: 23本。10本未満はデータ不完全
+        if len(h1_vals) < 10:
+            print(f"  [SKIP] H1バー不足: {date_str} ({len(h1_vals)}本)")
+            continue
+
         h1_avg   = sum(h1_vals) / len(h1_vals)
         h4_pct20 = 100 * sum(1 for v in h4_vals if v >= 20) / len(h4_vals)
         h4_pct30 = 100 * sum(1 for v in h4_vals if v >= 30) / len(h4_vals)
         score    = adx_score(h1_avg, h4_pct20, h4_pct30)
 
         scores.append({
-            "date":       date_str,
-            "symbol":     "XAUUSD",
-            "h1_avg_adx": round(h1_avg, 2),
-            "h4_pct20":   round(h4_pct20, 1),
-            "h4_pct30":   round(h4_pct30, 1),
-            "score":      score,
+            "date":        date_str,
+            "symbol":      "XAUUSD",
+            "h1_avg_adx":  round(h1_avg, 2),
+            "h4_pct20":    round(h4_pct20, 1),
+            "h4_pct30":    round(h4_pct30, 1),
+            "score":       score,
+            "h1_bars":     len(h1_vals),   # デバッグ用
+            "h4_bars":     len(h4_vals),   # デバッグ用
         })
     return scores
 

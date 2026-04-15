@@ -1,487 +1,592 @@
 """
-generate_html.py v2
-MT5出力CSV（data/adx_weekly.csv）を読み込んでヒートマップHTML生成
-+ data/scores.json（日次）を読んで直近5日パネルを生成
-
-【変更点】
-- 週次データはTwelve Data APIではなくMT5出力CSVを正解データとして使用
-- APIはLINE配信用の日次スコアのみに使用
-- スコアのフロア値を設計書準拠の0.1に戻す
+generate_html.py v3
+MT5出力CSV → 多銘柄ヒートマップHTML生成
+機能:
+  - 表示銘柄の選択（ON/OFF切替）
+  - スコア順 / 銘柄名順 の並び替え
+  - 期間スライダー
+  - 直近5日パネル（scores.json から）
 """
 
-import json
-import os
-import math
-import csv
-import io
+import json, os, csv, io, math
 from datetime import datetime, timezone, timedelta
 
-CSV_PATH  = "data/adx_weekly.csv"   # MT5出力CSVのパス
-DATA_PATH = "data/scores.json"      # 日次スコア（LINE用）
+CSV_PATH  = "data/adx_weekly.csv"
+DATA_PATH = "data/scores.json"
 HTML_PATH = "docs/index.html"
 JST       = timezone(timedelta(hours=9))
 
-SYMBOLS = ["XAUUSD"]
+SYM_COLORS = {
+    "XAUUSD": "#ffd700", "XAGUSD": "#cccccc", "USDCAD": "#44ccff",
+    "AUDUSD": "#88ffcc", "USDJPY": "#ff99cc", "EURUSD": "#bb88ff",
+    "BTCUSD": "#ff8844",
+}
 
 
-# ── MT5 CSV読み込み ───────────────────────────────────
-def load_csv_weekly(csv_path: str) -> dict:
-    """
-    ADX_Weekly_Above_v2.csv を読み込んで
-    { "XAUUSD": { "2025-W03": {"ws":"2025.01.13","h1a":26.63,"h4p20":100.0,"h4p30":70.0}, ... } }
-    の形式に変換する
-    """
-    if not os.path.exists(csv_path):
-        print(f"[WARN] CSVファイルが見つかりません: {csv_path}")
+# ── ADXスコア計算 ────────────────────────────────────
+def calc_score(h1a, h4p20, h4p30):
+    h1norm = max(0, min(100, (h1a - 10) / 30 * 100))
+    a      = max(0.1, h1norm)
+    b      = max(0.1, h4p20)
+    base   = math.sqrt(a * b) * 0.85
+    bonus  = 1.0 + (h4p30 / 100) * 0.5
+    return round(min(100, base * bonus), 1)
+
+
+def score_grade(s):
+    if s >= 80: return ("🔥 爆発",    "#ff4400", "#fff")
+    if s >= 65: return ("🔶 超強",    "#ff9900", "#000")
+    if s >= 50: return ("⭐ 候補",    "#cccc00", "#000")
+    if s >= 38: return ("✅ 良い",    "#00a85e", "#fff")
+    if s >= 27: return ("🔹 OK",      "#007040", "#fff")
+    if s >= 18: return ("⬜ 様子見",  "#1a3d25", "#88ccaa")
+    if s >= 10: return ("⬛ 弱い",    "#252500", "#aaaa44")
+    return             ("⬛ 見送り",  "#0c1018", "#2a3a48")
+
+
+# ── CSV読み込み ──────────────────────────────────────
+def load_csv(path):
+    if not os.path.exists(path):
+        print(f"[WARN] CSV未検出: {path}")
         return {}
-
-    # UTF-16 LE（MT5の出力形式）を読み込む
-    with open(csv_path, "rb") as f:
+    with open(path, "rb") as f:
         raw = f.read()
-
-    # エンコーディング自動判定
     try:
         text = raw.decode("utf-16-le", errors="replace").lstrip("\ufeff")
     except Exception:
         text = raw.decode("utf-8", errors="replace").lstrip("\ufeff")
 
-    result = {}
+    raw_data = {}   # {sym: {week: {ws,h1a,h4p20,h4p30,score}}}
     reader = csv.DictReader(io.StringIO(text))
-
     for row in reader:
-        sym  = row.get("Symbol", "").strip()
-        week = row.get("Week",   "").strip()
-        ws   = row.get("WeekStart", "").strip()
-        if not sym or not week:
-            continue
-
+        sym  = row.get("Symbol","").strip()
+        week = row.get("Week","").strip()
+        ws   = row.get("WeekStart","").strip()
+        if not sym or not week: continue
         try:
-            h1a   = float(row.get("H1_AvgADX",      0))
-            h4p20 = float(row.get("H4_Pct_Above20", 0))
-            h4p30 = float(row.get("H4_Pct_Above30", 0))
+            h1a   = float(row.get("H1_AvgADX",     0))
+            h4p20 = float(row.get("H4_Pct_Above20",0))
+            h4p30 = float(row.get("H4_Pct_Above30",0))
         except (ValueError, TypeError):
             continue
-
-        if sym not in result:
-            result[sym] = {}
-        result[sym][week] = {
-            "ws":    ws,
-            "h1a":   round(h1a, 2),
-            "h4p20": round(h4p20, 1),
-            "h4p30": round(h4p30, 1),
+        score = calc_score(h1a, h4p20, h4p30)
+        raw_data.setdefault(sym, {})[week] = {
+            "ws": ws, "h1a": round(h1a,2),
+            "h4p20": round(h4p20,1), "h4p30": round(h4p30,1),
+            "score": score,
         }
-
-    for sym, weeks in result.items():
-        print(f"  CSV読み込み: {sym} {len(weeks)}週分")
-
-    return result
+    for sym, wks in raw_data.items():
+        print(f"  {sym}: {len(wks)}週")
+    return raw_data
 
 
-# ── 日次スコア読み込み（LINE用直近5日）──────────────
-def load_recent_5(data_path: str) -> list[dict]:
-    if not os.path.exists(data_path):
-        return []
-    with open(data_path, encoding="utf-8") as f:
-        records = json.load(f)
-    # 平日のみ、直近5件
-    weekday = [r for r in records if datetime.strptime(r["date"], "%Y-%m-%d").weekday() < 5]
-    return weekday[-5:] if len(weekday) >= 5 else weekday
+# ── 直近5日読み込み ──────────────────────────────────
+def load_recent5(path):
+    if not os.path.exists(path): return []
+    with open(path, encoding="utf-8") as f:
+        recs = json.load(f)
+    wd = [r for r in recs if datetime.strptime(r["date"],"%Y-%m-%d").weekday() < 5]
+    return wd[-5:] if len(wd) >= 5 else wd
 
 
-# ── HTMLテンプレート ──────────────────────────────────
-HTML_TEMPLATE = r"""<!DOCTYPE html>
+# ── セル色計算 ──────────────────────────────────────
+def cell_style(score):
+    _, bg, tx = score_grade(score)
+    return bg, tx
+
+
+# ── HTML生成 ─────────────────────────────────────────
+def generate_html(raw_data, recent5):
+    now_jst = datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")
+
+    # 全週リスト
+    all_weeks = sorted({w for sym_d in raw_data.values() for w in sym_d})
+    all_syms  = sorted(raw_data.keys(),
+                       key=lambda s: list(SYM_COLORS.keys()).index(s)
+                       if s in SYM_COLORS else 99)
+    n_weeks   = len(all_weeks)
+
+    # 最新週スコアバナー
+    last_wk = all_weeks[-1] if all_weeks else ""
+    last_ws = ""
+    banner_cards = ""
+    if last_wk:
+        latest = []
+        for sym in all_syms:
+            r = raw_data.get(sym, {}).get(last_wk)
+            if r:
+                if not last_ws: last_ws = r["ws"]
+                latest.append((sym, r["score"], r))
+        # スコア降順
+        latest.sort(key=lambda x: -x[1])
+        for sym, score, r in latest:
+            lbl, bg, tx = score_grade(score)
+            sc = SYM_COLORS.get(sym, "#aaa")
+            h4p30_str = f"H4_30:{r['h4p30']:.0f}%"
+            banner_cards += f"""
+    <div style="background:{bg};border-radius:8px;padding:10px 14px;text-align:center;min-width:100px;border:1px solid {sc}44;">
+      <div style="font-size:10px;font-weight:700;color:{sc};">{sym}</div>
+      <div style="font-size:26px;font-weight:700;color:{tx};line-height:1;">{int(round(score))}</div>
+      <div style="font-size:9px;color:{tx};margin-top:2px;">{lbl}</div>
+      <div style="font-size:8px;color:{tx};opacity:0.7;margin-top:2px;">{h4p30_str}</div>
+    </div>"""
+
+    # 直近5日パネル
+    recent_html = ""
+    if recent5:
+        for r in recent5:
+            s = calc_score(r["h1_avg_adx"], r["h4_pct20"], r["h4_pct30"])
+            lbl, bg, tx = score_grade(s)
+            dt  = datetime.strptime(r["date"], "%Y-%m-%d")
+            dow = ["月","火","水","木","金","土","日"][dt.weekday()]
+            d   = r["date"][5:].replace("-","/")
+            recent_html += f"""
+    <div style="background:{bg};border:1px solid #1a3050;border-radius:8px;padding:8px 10px;text-align:center;min-width:82px;">
+      <div style="font-size:9px;color:#5a8aaa;margin-bottom:3px;">{d}({dow})</div>
+      <div style="font-size:20px;font-weight:800;color:{tx};line-height:1;">{int(round(s))}</div>
+      <div style="font-size:8px;font-weight:700;color:{tx};margin-top:2px;">{lbl}</div>
+      <div style="margin-top:5px;border-top:1px solid rgba(255,255,255,0.1);padding-top:3px;font-size:7px;color:#6a9ab0;">
+        H1avg <b style="color:#aaccff;">{r['h1_avg_adx']}</b><br>
+        H4≥20 <b style="color:#ffcc44;">{r['h4_pct20']}%</b><br>
+        H4≥30 <b style="color:#ff88cc;">{r['h4_pct30']}%</b>
+      </div>
+    </div>"""
+
+    # 週ヘッダー（年ラベル・月ラベル）
+    def week_header_cells():
+        cells = []
+        for i, wk in enumerate(all_weeks):
+            is_yr = wk.endswith("W01")
+            ws = raw_data.get(all_syms[0] if all_syms else "", {}).get(wk, {}).get("ws","")
+            mon = int(ws[5:7])-1 if ws else 0
+            ml  = ["J","F","M","A","M","J","J","A","S","O","N","D"]
+            if is_yr:
+                lbl = f"'{wk[2:4]}"
+                style = "font-size:7px;color:#8a9a60;font-weight:700;"
+                bl = "border-left:1px solid #2a3010;"
+            elif i % 4 == 0:
+                lbl = ml[mon]
+                style = "font-size:7px;color:#3a4020;"
+                bl = ""
+            else:
+                lbl = ""
+                style = ""
+                bl = ""
+            cells.append(f'<td style="width:24px;text-align:center;{style}{bl}padding-bottom:4px;">{lbl}</td>')
+        return "\n".join(cells)
+
+    # 銘柄グリッド生成
+    def sym_grid(sym):
+        sym_data = raw_data.get(sym, {})
+        sc = SYM_COLORS.get(sym, "#aaa")
+
+        # スコア行
+        score_cells = []
+        h1_cells, h4p20_cells, h4p30_cells = [], [], []
+        for wk in all_weeks:
+            r = sym_data.get(wk)
+            is_yr = wk.endswith("W01")
+            bl = "border-left:1px solid #2a3010;" if is_yr else ""
+            latest_outline = "outline:2px solid #ffd700;outline-offset:-1px;" if wk == last_wk else ""
+
+            if r:
+                s = r["score"]
+                bg, tx = cell_style(s)
+                score_cells.append(
+                    f'<td class="cell" data-sym="{sym}" data-wk="{wk}" '
+                    f'style="background:{bg};width:24px;height:28px;text-align:center;'
+                    f'font-size:8px;color:{tx};font-weight:700;border-radius:2px;{bl}{latest_outline}">'
+                    f'{int(round(s))}</td>')
+
+                # H1avg
+                v = r["h1a"]
+                if v>=35: hbg,htx="#ff9900","#000"
+                elif v>=30: hbg,htx="#00ffb3","#001a0e"
+                elif v>=24: hbg,htx="#00a85e","#fff"
+                elif v>=20: hbg,htx="#007040","#fff"
+                elif v>=17: hbg,htx="#2a2a00","#aaaa44"
+                else: hbg,htx="#0c1018","#2a3a48"
+                h1_cells.append(
+                    f'<td class="cell" data-sym="{sym}" data-wk="{wk}" '
+                    f'style="background:{hbg};width:24px;height:20px;text-align:center;'
+                    f'font-size:7px;color:{htx};font-weight:600;border-radius:2px;{bl}">'
+                    f'{v:.1f}</td>')
+
+                # H4≥20%
+                for val, cells_list in [(r["h4p20"], h4p20_cells),(r["h4p30"], h4p30_cells)]:
+                    if val>=75: pbg,ptx="#00ffb3","#001a0e"
+                    elif val>=60: pbg,ptx="#00d97e","#001a0e"
+                    elif val>=45: pbg,ptx="#00a85e","#fff"
+                    elif val>=30: pbg,ptx="#007040","#fff"
+                    elif val>=15: pbg,ptx="#1a3d25","#88ccaa"
+                    elif val>=5:  pbg,ptx="#252500","#aaaa44"
+                    else: pbg,ptx="#0c1018","#2a3a48"
+                    cells_list.append(
+                        f'<td class="cell" data-sym="{sym}" data-wk="{wk}" '
+                        f'style="background:{pbg};width:24px;height:20px;text-align:center;'
+                        f'font-size:7px;color:{ptx};font-weight:600;border-radius:2px;{bl}">'
+                        f'{int(round(val))}</td>')
+            else:
+                empty = (f'<td style="width:24px;height:{{h}}px;background:#060b10;{bl}"></td>')
+                score_cells.append(empty.format(h=28))
+                h1_cells.append(empty.format(h=20))
+                h4p20_cells.append(empty.format(h=20))
+                h4p30_cells.append(empty.format(h=20))
+
+        # AVG列
+        vals = [sym_data[w]["score"] for w in all_weeks if w in sym_data]
+        avg  = sum(vals)/len(vals) if vals else 0
+        abg, atx = cell_style(avg)
+        avg_score_cell = (
+            f'<td style="text-align:center;font-size:11px;font-weight:700;padding-left:8px;'
+            f'border-left:1px solid #1a2000;background:{abg};color:{atx};'
+            f'position:sticky;right:0;z-index:1;border-radius:2px;height:28px;">'
+            f'{int(round(avg))}</td>')
+
+        def avg_cell(cells_list, h=20):
+            return (f'<td style="text-align:center;font-size:9px;font-weight:700;padding-left:8px;'
+                    f'border-left:1px solid #1a2000;background:#0a1520;color:#3a5a70;'
+                    f'position:sticky;right:0;z-index:1;height:{h}px;"></td>')
+
+        score_row  = "\n".join(score_cells)
+        h1_row     = "\n".join(h1_cells)
+        h4p20_row  = "\n".join(h4p20_cells)
+        h4p30_row  = "\n".join(h4p30_cells)
+
+        return f"""
+<div class="sym-block" data-sym="{sym}" data-lastscore="{sym_data.get(last_wk,{}).get('score',0):.1f}" style="margin-bottom:22px;">
+  <div style="font-size:13px;font-weight:700;color:{sc};margin-bottom:3px;padding-left:106px;letter-spacing:1px;">{sym}</div>
+  <table style="border-collapse:separate;border-spacing:2px;min-width:max-content;">
+  <thead><tr>
+    <th style="min-width:102px;width:102px;background:#060b10;position:sticky;left:0;z-index:3;"></th>
+    {week_header_cells()}
+    <th style="width:46px;font-size:9px;color:#3a4020;text-align:center;padding-left:8px;border-left:1px solid #1a2000;position:sticky;right:0;background:#060b10;z-index:3;">AVG</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td style="font-size:10px;font-weight:700;color:#7ab8d8;padding-right:6px;padding-left:4px;white-space:nowrap;position:sticky;left:0;background:#060b10;z-index:2;">📊 相場点数</td>
+      {score_row}
+      {avg_score_cell}
+    </tr>
+    <tr><td style="height:3px;" colspan="{n_weeks+2}"></td></tr>
+    <tr>
+      <td style="font-size:9px;color:#4a7a90;padding-right:6px;padding-left:4px;white-space:nowrap;position:sticky;left:0;background:#060b10;z-index:2;">H1 avgADX</td>
+      {h1_row}
+      {avg_cell(h1_cells)}
+    </tr>
+    <tr>
+      <td style="font-size:9px;color:#4a7a90;padding-right:6px;padding-left:4px;white-space:nowrap;position:sticky;left:0;background:#060b10;z-index:2;">H4 ≥20%</td>
+      {h4p20_row}
+      {avg_cell(h4p20_cells)}
+    </tr>
+    <tr>
+      <td style="font-size:9px;color:#4a7a90;padding-right:6px;padding-left:4px;white-space:nowrap;position:sticky;left:0;background:#060b10;z-index:2;">H4 ≥30%</td>
+      {h4p30_row}
+      {avg_cell(h4p30_cells)}
+    </tr>
+  </tbody>
+  </table>
+</div>"""
+
+    # 全銘柄グリッド
+    all_grids = "\n".join(sym_grid(sym) for sym in all_syms)
+
+    # TOOLTIP JSON
+    tooltip = {}
+    for sym in all_syms:
+        for wk, r in raw_data.get(sym, {}).items():
+            tooltip.setdefault(wk, {})[sym] = {
+                "ws": r["ws"], "h1a": r["h1a"],
+                "h4p20": r["h4p20"], "h4p30": r["h4p30"],
+                "s": r["score"],
+            }
+    tooltip_json = json.dumps(tooltip, ensure_ascii=False)
+    weeks_json   = json.dumps(all_weeks, ensure_ascii=False)
+    syms_json    = json.dumps(all_syms, ensure_ascii=False)
+    sym_c_json   = json.dumps(SYM_COLORS, ensure_ascii=False)
+    recent_json  = json.dumps(recent5, ensure_ascii=False)
+
+    # 銘柄フィルターボタン
+    sym_filter_btns = ""
+    for sym in all_syms:
+        sc = SYM_COLORS.get(sym, "#aaa")
+        sym_filter_btns += f"""
+    <button class="sym-btn active" data-sym="{sym}"
+      onclick="toggleSym('{sym}',this)"
+      style="background:#0d1e30;border:1px solid {sc}66;border-radius:4px;
+             color:{sc};font-size:11px;padding:4px 10px;cursor:pointer;
+             font-family:inherit;font-weight:700;">{sym}</button>"""
+
+    html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XAUUSD ADX Score — 週次ヒートマップ</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<title>ADX Score Dashboard — 多銘柄</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:#060b10;font-family:'IBM Plex Mono','Courier New',monospace;color:#b0c8e0;}
-::-webkit-scrollbar{width:5px;height:5px;}
-::-webkit-scrollbar-track{background:#0a1520;}
-::-webkit-scrollbar-thumb{background:#1a3050;border-radius:3px;}
-.cell{border-radius:2px;transition:filter 0.08s;cursor:default;}
-.cell:hover{filter:brightness(1.6)!important;}
-input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;background:#1a3050;outline:none;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#44aaff;cursor:pointer;}
+*{{box-sizing:border-box;margin:0;padding:0;}}
+body{{background:#060b10;font-family:'IBM Plex Mono','Courier New',monospace;color:#b0c8e0;}}
+::-webkit-scrollbar{{width:5px;height:5px;}}
+::-webkit-scrollbar-track{{background:#0a1520;}}
+::-webkit-scrollbar-thumb{{background:#1a3050;border-radius:3px;}}
+.cell{{cursor:default;transition:filter 0.08s;}}
+.cell:hover{{filter:brightness(1.55);}}
+input[type=range]{{-webkit-appearance:none;height:4px;border-radius:2px;background:#1a3050;outline:none;width:100%;}}
+input[type=range]::-webkit-slider-thumb{{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#ffd700;cursor:pointer;}}
+.sym-btn{{transition:opacity 0.15s;}}
+.sym-btn.inactive{{opacity:0.3;}}
+.ctrl-btn{{background:transparent;border:1px solid #1a3050;border-radius:4px;
+           color:#3a5a70;font-size:10px;padding:4px 10px;cursor:pointer;
+           font-family:inherit;white-space:nowrap;transition:all 0.1s;}}
+.ctrl-btn:hover{{border-color:#3a5a70;color:#7ab8d8;}}
+.ctrl-btn.active{{background:#0a2030;border-color:#2266aa;color:#44aaff;font-weight:700;}}
 </style>
 </head>
 <body>
-<div id="root"></div>
+
+<!-- ヘッダー -->
+<div style="background:linear-gradient(135deg,#0a1828,#060b10);border-bottom:1px solid #122030;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <div>
+    <div style="font-size:9px;color:#2a4a60;letter-spacing:2px;margin-bottom:2px;">
+      ADX Score = sqrt(H1norm x H4_20) x 0.85 x (1 + H4_30x0.5) | MT5 iADX準拠
+    </div>
+    <div style="font-size:18px;font-weight:700;color:#d8f0ff;">⚡ ADX Score Dashboard</div>
+    <div style="font-size:9px;color:#2a4a60;margin-top:2px;">最終更新: {now_jst} | {n_weeks}週 | {len(all_syms)}銘柄</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:10px;color:#3a5a70;">並び替え:</span>
+    <button class="ctrl-btn active" id="btn-score" onclick="sortBy('score')">スコア順↓</button>
+    <button class="ctrl-btn" id="btn-alpha" onclick="sortBy('alpha')">銘柄名順</button>
+    <button class="ctrl-btn" id="btn-default" onclick="sortBy('default')">デフォルト</button>
+  </div>
+</div>
+
+<!-- 最新週バナー -->
+<div style="background:#0a1520;border-bottom:1px solid #122030;padding:10px 18px;">
+  <div style="font-size:10px;color:#3a5a70;margin-bottom:8px;">📊 最新週スコア ({last_wk} / {last_ws}) — スコア降順</div>
+  <div id="latest-banner" style="display:flex;gap:8px;flex-wrap:wrap;">{banner_cards}</div>
+</div>
+
+<!-- 直近5日パネル（XAUUSD日次）-->
+{'<div style="background:#07101a;border-bottom:1px solid #122030;padding:10px 16px;"><div style="font-size:10px;color:#3a5a70;margin-bottom:8px;">📅 XAUUSD 直近5営業日</div><div style="display:flex;gap:8px;flex-wrap:wrap;">' + recent_html + '</div></div>' if recent_html else ''}
+
+<!-- 銘柄フィルター -->
+<div style="background:#0a1520;border-bottom:1px solid #122030;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+  <span style="font-size:10px;color:#3a5a70;">表示銘柄:</span>
+  {sym_filter_btns}
+  <button class="ctrl-btn" onclick="selectAll()" style="margin-left:4px;">全選択</button>
+  <button class="ctrl-btn" onclick="selectNone()">全解除</button>
+  <div style="margin-left:auto;display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+    <span style="font-size:9px;color:#2a4a60;">スコア:</span>
+    {''.join(f'<div style="display:flex;align-items:center;gap:2px;"><div style="width:16px;height:11px;background:{bg};border-radius:2px;border:1px solid #1a3050;"></div><span style="font-size:8px;color:#4a6a80;">{lbl}</span></div>'
+             for lbl,bg in [("≥80🔥","#ff4400"),("≥65","#ff9900"),("≥50★","#cccc00"),("≥38","#00a85e"),("≥27","#007040"),("低","#0c1018")])}
+  </div>
+</div>
+
+<!-- 期間スライダー -->
+<div style="background:#07101a;border-bottom:1px solid #0d1e2e;padding:8px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+  <span style="font-size:10px;color:#3a5a70;white-space:nowrap;">開始:</span>
+  <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:150px;max-width:300px;">
+    <input type="range" id="rStart" min="0" max="{n_weeks-1}" value="0" oninput="updateRange()">
+    <div id="lStart" style="font-size:9px;color:#5a8aaa;"></div>
+  </div>
+  <span style="font-size:10px;color:#3a5a70;white-space:nowrap;">終了:</span>
+  <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:150px;max-width:300px;">
+    <input type="range" id="rEnd" min="0" max="{n_weeks-1}" value="{n_weeks-1}" oninput="updateRange()">
+    <div id="lEnd" style="font-size:9px;color:#5a8aaa;"></div>
+  </div>
+  <button class="ctrl-btn" onclick="setRange(0,{n_weeks-1})">全期間</button>
+  <button class="ctrl-btn" onclick="setRange(Math.max(0,{n_weeks-1}-52),{n_weeks-1})">直近1年</button>
+  <button class="ctrl-btn" onclick="setRange(Math.max(0,{n_weeks-1}-26),{n_weeks-1})">直近6ヶ月</button>
+  <button class="ctrl-btn" onclick="setRange(Math.max(0,{n_weeks-1}-13),{n_weeks-1})">直近3ヶ月</button>
+</div>
+
+<!-- ツールチップ -->
+<div id="tip" style="min-height:34px;padding:5px 16px;font-size:10px;color:#1a2e40;">
+  セルにカーソル/タップで詳細表示
+</div>
+
+<!-- グリッド -->
+<div id="grid-wrap" style="overflow-x:auto;padding:0 16px 28px;-webkit-overflow-scrolling:touch;">
+  {all_grids}
+</div>
+
 <script>
-const RAW        = <<<RAW_JSON>>>;
-const ALL_WEEKS  = <<<WEEKS_JSON>>>;
-const ALL_SYMS   = <<<SYMS_JSON>>>;
-const RECENT_5   = <<<RECENT_JSON>>>;
-const UPDATED_AT = "<<<UPDATED_AT>>>";
-</script>
-<script type="text/babel">
-const {useState, useMemo, useEffect, useRef} = React;
-const SYM_C = {XAUUSD:"#ffd700",USDCAD:"#44ccff",AUDUSD:"#88ffcc",USDJPY:"#ff99cc"};
-const ML = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WEEKS   = {weeks_json};
+const ALL_SYMS = {syms_json};
+const SYM_C   = {sym_c_json};
+const TOOLTIP = {tooltip_json};
+const RECENT5 = {recent_json};
 
-// ADXスコア（MT5設計書準拠・フロア0.1）
-function calcScore(h1a, h4p20, h4p30) {
-  if(h1a==null||h4p20==null||h4p30==null) return null;
-  const h1norm = Math.max(0, Math.min(100, (h1a - 10) / 30 * 100));
-  const a      = Math.max(0.1, h1norm);
-  const b      = Math.max(0.1, h4p20);
-  const base   = Math.sqrt(a * b) * 0.85;
-  const bonus  = 1.0 + (h4p30 / 100) * 0.5;
-  return Math.min(100, base * bonus);
-}
+let visibleSyms = new Set(ALL_SYMS);
+let sortMode    = 'score';  // 'score' | 'alpha' | 'default'
 
-function scoreColor(s) {
-  if(s==null) return {bg:"#0c1018",tx:"#1e2e3e"};
-  if(s>=80)   return {bg:"#ff4400",tx:"#fff"};
-  if(s>=65)   return {bg:"#ff9900",tx:"#000"};
-  if(s>=50)   return {bg:"#cccc00",tx:"#000"};
-  if(s>=38)   return {bg:"#00a85e",tx:"#fff"};
-  if(s>=27)   return {bg:"#007040",tx:"#fff"};
-  if(s>=18)   return {bg:"#1a3d25",tx:"#88ccaa"};
-  if(s>=10)   return {bg:"#252500",tx:"#aaaa44"};
-  if(s>=4)    return {bg:"#1a1400",tx:"#555533"};
-  return             {bg:"#0c1018",tx:"#2a3a48"};
-}
-function h1AvgColor(v) {
-  if(v==null) return {bg:"#0c1018",tx:"#1e2e3e"};
-  if(v>=40)   return {bg:"#ff4400",tx:"#fff"};
-  if(v>=35)   return {bg:"#ff9900",tx:"#000"};
-  if(v>=30)   return {bg:"#00ffb3",tx:"#001a0e"};
-  if(v>=27)   return {bg:"#00d97e",tx:"#001a0e"};
-  if(v>=24)   return {bg:"#00a85e",tx:"#fff"};
-  if(v>=21)   return {bg:"#007040",tx:"#fff"};
-  if(v>=20)   return {bg:"#1a3d25",tx:"#88ccaa"};
-  if(v>=17)   return {bg:"#2a2a00",tx:"#aaaa44"};
-  return             {bg:"#0c1018",tx:"#2a3a48"};
-}
-function pctColor(v) {
-  if(v==null) return {bg:"#0c1018",tx:"#1e2e3e"};
-  if(v>=75)   return {bg:"#00ffb3",tx:"#001a0e"};
-  if(v>=60)   return {bg:"#00d97e",tx:"#001a0e"};
-  if(v>=45)   return {bg:"#00a85e",tx:"#fff"};
-  if(v>=30)   return {bg:"#007040",tx:"#fff"};
-  if(v>=15)   return {bg:"#1a3d25",tx:"#88ccaa"};
-  if(v>=5)    return {bg:"#252500",tx:"#aaaa44"};
-  return             {bg:"#0c1018",tx:"#2a3a48"};
-}
+// ── 週ラベル ──
+function fmtWk(wk) {{
+  const blocks = document.querySelectorAll('.sym-block');
+  for(const b of blocks) {{
+    const td = b.querySelector(`[data-wk="${{wk}}"]`);
+    if(td) {{
+      const tds = Array.from(b.querySelector('thead tr').children);
+      const idx = tds.indexOf(td);
+      if(idx > 0) {{
+        return WEEKS[idx-1] || wk;
+      }}
+    }}
+  }}
+  return wk;
+}}
+function fmtWkLabel(wk) {{
+  const parts = wk.split('-');
+  return parts[0].slice(2) + '/' + parts[1];
+}}
 
-const ROWS = [
-  {key:"score", label:"📊 相場点数", colorFn:scoreColor, fmt:v=>v!=null?Math.round(v):"",  h:28, bold:true},
-  {key:"h1a",   label:"H1 avgADX",  colorFn:h1AvgColor, fmt:v=>v!=null?v.toFixed(1):"",    h:20},
-  {key:"h4p20", label:"H4 ≥20%",   colorFn:pctColor,   fmt:v=>v!=null?Math.round(v):"",   h:20},
-  {key:"h4p30", label:"H4 ≥30%",   colorFn:pctColor,   fmt:v=>v!=null?Math.round(v):"",   h:20},
-];
+// ── 銘柄表示切替 ──
+function toggleSym(sym, btn) {{
+  if(visibleSyms.has(sym)) {{
+    if(visibleSyms.size <= 1) return; // 最低1銘柄は表示
+    visibleSyms.delete(sym);
+    btn.classList.remove('active');
+    btn.classList.add('inactive');
+  }} else {{
+    visibleSyms.add(sym);
+    btn.classList.add('active');
+    btn.classList.remove('inactive');
+  }}
+  applyVisibility();
+}}
+function selectAll() {{
+  visibleSyms = new Set(ALL_SYMS);
+  document.querySelectorAll('.sym-btn').forEach(b => {{
+    b.classList.add('active'); b.classList.remove('inactive');
+  }});
+  applyVisibility();
+}}
+function selectNone() {{
+  // 最初の1銘柄だけ残す
+  visibleSyms = new Set([ALL_SYMS[0]]);
+  document.querySelectorAll('.sym-btn').forEach(b => {{
+    const sym = b.getAttribute('data-sym');
+    if(sym === ALL_SYMS[0]) {{ b.classList.add('active'); b.classList.remove('inactive'); }}
+    else {{ b.classList.remove('active'); b.classList.add('inactive'); }}
+  }});
+  applyVisibility();
+}}
+function applyVisibility() {{
+  document.querySelectorAll('.sym-block').forEach(el => {{
+    el.style.display = visibleSyms.has(el.getAttribute('data-sym')) ? '' : 'none';
+  }});
+}}
 
-function fmtWk(wk) {
-  const ws = Object.values(RAW)[0]?.[wk]?.ws || "";
-  return ws ? ws.slice(2,10).replace(/\./g,"/") : wk.slice(-3);
-}
-function getCellVal(sym, wk, key) {
-  const r = RAW[sym]?.[wk];
-  if(!r) return null;
-  if(key==="score") return calcScore(r.h1a, r.h4p20, r.h4p30);
-  return r[key] ?? null;
-}
-function rowAvg(sym, weeks, key) {
-  const vals = weeks.map(w=>getCellVal(sym,w,key)).filter(v=>v!=null);
-  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
-}
+// ── 並び替え ──
+function sortBy(mode) {{
+  sortMode = mode;
+  ['score','alpha','default'].forEach(m => {{
+    document.getElementById('btn-'+m).classList.toggle('active', m===mode);
+  }});
+  const wrap  = document.getElementById('grid-wrap');
+  const blocks = Array.from(wrap.querySelectorAll('.sym-block'));
+  if(mode === 'score') {{
+    blocks.sort((a,b) => parseFloat(b.dataset.lastscore||0) - parseFloat(a.dataset.lastscore||0));
+  }} else if(mode === 'alpha') {{
+    blocks.sort((a,b) => a.dataset.sym.localeCompare(b.dataset.sym));
+  }} else {{
+    // デフォルト順（ALL_SYMSの順）
+    blocks.sort((a,b) => ALL_SYMS.indexOf(a.dataset.sym) - ALL_SYMS.indexOf(b.dataset.sym));
+  }}
+  blocks.forEach(b => wrap.appendChild(b));
+}}
 
-function scoreLabel(s) {
-  if(s==null) return "—";
-  if(s>=80) return "最強🔥"; if(s>=65) return "超強✅";
-  if(s>=50) return "★候補";  if(s>=38) return "良い";
-  if(s>=27) return "OK";     if(s>=18) return "様子見⚠️";
-  return "NG❌";
-}
+// ── 期間スライダー ──
+function updateRange() {{
+  var s = parseInt(document.getElementById('rStart').value);
+  var e = parseInt(document.getElementById('rEnd').value);
+  if(s > e) {{ var tmp=s; s=e; e=tmp; }}
+  document.getElementById('lStart').textContent = fmtWkLabel(WEEKS[s]) + ' (' + WEEKS[s] + ')';
+  document.getElementById('lEnd').textContent   = fmtWkLabel(WEEKS[e]) + ' (' + WEEKS[e] + ')';
+  document.querySelectorAll('.sym-block table tbody tr').forEach(function(row) {{
+    var tds = row.querySelectorAll('td');
+    tds.forEach(function(td, idx) {{
+      if(idx===0 || idx===tds.length-1) return;
+      td.style.display = (idx-1>=s && idx-1<=e) ? '' : 'none';
+    }});
+  }});
+  document.querySelectorAll('.sym-block table thead tr').forEach(function(row) {{
+    var ths = row.querySelectorAll('td,th');
+    ths.forEach(function(th, idx) {{
+      if(idx===0 || idx===ths.length-1) return;
+      th.style.display = (idx-1>=s && idx-1<=e) ? '' : 'none';
+    }});
+  }});
+}}
+function setRange(s,e) {{
+  document.getElementById('rStart').value = s;
+  document.getElementById('rEnd').value   = e;
+  updateRange();
+}}
 
-function RecentPanel() {
-  if(!RECENT_5||RECENT_5.length===0) return null;
-  return (
-    <div style={{padding:"12px 16px",borderBottom:"1px solid #122030",background:"#07101a"}}>
-      <div style={{fontSize:10,color:"#3a5a70",marginBottom:8,letterSpacing:1}}>📅 直近5営業日</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        {RECENT_5.map(r=>{
-          const s = calcScore(r.h1_avg_adx, r.h4_pct20, r.h4_pct30);
-          const c = scoreColor(s);
-          const dt  = new Date(r.date + "T00:00:00Z");
-          const dow = ["日","月","火","水","木","金","土"][dt.getUTCDay()];
-          const lbl = r.date.slice(5).replace("-","/");
-          return (
-            <div key={r.date} style={{
-              background:c.bg, border:"1px solid #1a3050",
-              borderRadius:8, padding:"8px 12px", minWidth:90, textAlign:"center"
-            }}>
-              <div style={{fontSize:9,color:"#5a8aaa",marginBottom:4}}>{lbl}({dow})</div>
-              <div style={{fontSize:22,fontWeight:800,color:c.tx,lineHeight:1}}>
-                {s!=null ? Math.round(s) : "—"}
-              </div>
-              <div style={{fontSize:9,fontWeight:700,color:c.tx,marginTop:2}}>
-                {scoreLabel(s)}
-              </div>
-              <div style={{marginTop:6,borderTop:"1px solid rgba(255,255,255,0.1)",paddingTop:4}}>
-                <div style={{fontSize:8,color:"#6a9ab0"}}>H1avg <b style={{color:"#aaccff"}}>{r.h1_avg_adx}</b></div>
-                <div style={{fontSize:8,color:"#6a9ab0"}}>H4≥20 <b style={{color:"#ffcc44"}}>{r.h4_pct20}%</b></div>
-                <div style={{fontSize:8,color:"#6a9ab0"}}>H4≥30 <b style={{color:"#ff88cc"}}>{r.h4_pct30}%</b></div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// ── ツールチップ ──
+document.addEventListener('mouseover', function(e) {{
+  var cell = e.target.closest('.cell');
+  if(!cell) {{
+    document.getElementById('tip').innerHTML =
+      '<span style="color:#1a2e40">セルにカーソル/タップで詳細表示</span>';
+    return;
+  }}
+  var wk  = cell.getAttribute('data-wk');
+  var sym = cell.getAttribute('data-sym');
+  if(!wk||!sym||!TOOLTIP[wk]||!TOOLTIP[wk][sym]) return;
+  var t   = TOOLTIP[wk][sym];
+  var sc  = SYM_C[sym] || '#aaa';
+  var bonus = (1+(t.h4p30/100)*0.5).toFixed(2);
+  var lbl_map = [
+    [80,"🔥 爆発"],[65,"🔶 超強"],[50,"⭐ 候補"],
+    [38,"✅ 良い"],[27,"🔹 OK"],[18,"⬜ 様子見"],[10,"⬛ 弱い"],[0,"⬛ 見送り"]
+  ];
+  var grade = lbl_map.find(([th])=>t.s>=th)[1];
+  document.getElementById('tip').innerHTML =
+    '<div style="display:flex;gap:10px;background:#0a1520;border:1px solid #122030;' +
+    'border-radius:6px;padding:5px 14px;flex-wrap:wrap;align-items:center;">' +
+    '<span style="color:'+sc+';font-weight:700;font-size:12px;">'+sym+'</span>' +
+    '<span style="color:#2a4a60;">'+wk+' ('+t.ws+')</span>' +
+    '<span style="color:#3a5a70;">│</span>' +
+    '<span style="font-size:15px;font-weight:700;color:#ffd700;">📊 '+Math.round(t.s)+'点</span>' +
+    '<span style="color:#88aa44;">'+grade+'</span>' +
+    '<span style="color:#3a5a70;">│</span>' +
+    '<span>H1avg: <b style="color:#aaccff;">'+(t.h1a).toFixed(2)+'</b></span>' +
+    '<span>H4≥20: <b style="color:#ffcc44;">'+(t.h4p20).toFixed(1)+'%</b></span>' +
+    '<span>H4≥30: <b style="color:#ff88cc;">'+(t.h4p30).toFixed(1)+'%</b>' +
+    ' <span style="font-size:9px;color:#3a5070;">(x'+bonus+')</span></span>' +
+    '</div>';
+}});
 
-function App() {
-  const [symFilter, setSymFilter] = useState("ALL");
-  const [range, setRange]         = useState([Math.max(0,ALL_WEEKS.length-26), ALL_WEEKS.length-1]);
-  const [hov, setHov]             = useState(null);
-  const [view, setView]           = useState("both");
-  const gridRef = useRef();
-
-  const weeks    = useMemo(()=>ALL_WEEKS.slice(range[0],range[1]+1),[range]);
-  const dispSyms = symFilter==="ALL" ? ALL_SYMS : [symFilter];
-
-  useEffect(()=>{
-    if(gridRef.current) setTimeout(()=>{ gridRef.current.scrollLeft=gridRef.current.scrollWidth; },100);
-  },[weeks,view]);
-
-  const hovR     = hov ? RAW[hov.sym]?.[hov.wk] : null;
-  const hovScore = hovR ? calcScore(hovR.h1a, hovR.h4p20, hovR.h4p30) : null;
-
-  const visRows = view==="score"  ? [ROWS[0]] :
-                  view==="detail" ? ROWS.slice(1) : ROWS;
-
-  const Btn = (active, col="#2266aa") => ({
-    background:active?"#0a2030":"transparent",
-    border:`1px solid ${active?col:"#122030"}`,
-    borderRadius:4, color:active?"#44aaff":"#3a5a70",
-    fontSize:10, padding:"4px 10px", cursor:"pointer",
-    fontFamily:"inherit", fontWeight:active?700:400,
-  });
-
-  return (
-    <div style={{background:"#060b10",minHeight:"100vh"}}>
-      <div style={{background:"linear-gradient(135deg,#0a1828,#060b10)",borderBottom:"1px solid #122030",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
-        <div>
-          <div style={{fontSize:9,color:"#2a4a60",letterSpacing:2,marginBottom:2}}>
-            ADX Score = sqrt(H1norm x H4_20) x 0.85 x (1 + H4_30x0.5) | データ: MT5 iADX準拠
-          </div>
-          <div style={{fontSize:18,fontWeight:700,color:"#d8f0ff"}}>⚡ XAUUSD ADX Score Dashboard</div>
-          <div style={{fontSize:9,color:"#2a4a60",marginTop:2}}>最終更新: {UPDATED_AT} | {ALL_WEEKS.length}週のデータ</div>
-        </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          <button style={Btn(view==="score","#00aa66")}  onClick={()=>setView("score")}>スコアのみ</button>
-          <button style={Btn(view==="both","#2266aa")}   onClick={()=>setView("both")}>スコア+3指標</button>
-          <button style={Btn(view==="detail","#446688")} onClick={()=>setView("detail")}>3指標のみ</button>
-        </div>
-      </div>
-
-      <RecentPanel/>
-
-      <div style={{background:"#0a1520",borderBottom:"1px solid #122030",padding:"8px 16px",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:10,color:"#3a5a70"}}>銘柄:</span>
-        {["ALL",...ALL_SYMS].map(s=>(
-          <button key={s} onClick={()=>setSymFilter(s)} style={{
-            background:symFilter===s?"#0d1e30":"transparent",
-            border:`1px solid ${symFilter===s?"#2a4a70":"#122030"}`,
-            borderRadius:4, color:symFilter===s?(SYM_C[s]||"#88ccee"):"#3a5a70",
-            fontSize:11, padding:"3px 10px", cursor:"pointer",
-            fontFamily:"inherit", fontWeight:symFilter===s?700:400,
-          }}>{s}</button>
-        ))}
-        <div style={{marginLeft:"auto",display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
-          <span style={{fontSize:9,color:"#2a4a60"}}>スコア凡例:</span>
-          {[["≥80🔥","#ff4400"],["≥65","#ff9900"],["≥50★","#cccc00"],["≥38","#00a85e"],["≥27","#007040"],["低","#0c1018"]].map(([l,bg])=>(
-            <div key={l} style={{display:"flex",alignItems:"center",gap:3}}>
-              <div style={{width:18,height:12,background:bg,borderRadius:2,border:"1px solid #1a3050"}}/>
-              <span style={{fontSize:8,color:"#4a6a80"}}>{l}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{background:"#07101a",borderBottom:"1px solid #0d1e2e",padding:"8px 16px",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-        <span style={{fontSize:10,color:"#3a5a70",whiteSpace:"nowrap"}}>開始:</span>
-        <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:150,maxWidth:300}}>
-          <input type="range" min={0} max={ALL_WEEKS.length-1} value={range[0]}
-            onChange={e=>{const v=parseInt(e.target.value);if(v<range[1])setRange([v,range[1]]);}} style={{width:"100%"}}/>
-          <div style={{fontSize:9,color:"#5a8aaa"}}>{fmtWk(ALL_WEEKS[range[0]])} ({ALL_WEEKS[range[0]]})</div>
-        </div>
-        <span style={{fontSize:10,color:"#3a5a70",whiteSpace:"nowrap"}}>終了:</span>
-        <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:150,maxWidth:300}}>
-          <input type="range" min={0} max={ALL_WEEKS.length-1} value={range[1]}
-            onChange={e=>{const v=parseInt(e.target.value);if(v>range[0])setRange([range[0],v]);}} style={{width:"100%"}}/>
-          <div style={{fontSize:9,color:"#5a8aaa"}}>{fmtWk(ALL_WEEKS[range[1]])} ({ALL_WEEKS[range[1]]})</div>
-        </div>
-        {[["全期間",0],["直近1年",52],["直近6ヶ月",26],["直近3ヶ月",13]].map(([lbl,offset])=>(
-          <button key={lbl} onClick={()=>setRange([Math.max(0,ALL_WEEKS.length-(offset||ALL_WEEKS.length)),ALL_WEEKS.length-1])} style={{
-            background:"transparent",border:"1px solid #1a3050",borderRadius:4,
-            color:"#3a5a70",fontSize:10,padding:"4px 8px",cursor:"pointer",
-            fontFamily:"inherit",whiteSpace:"nowrap",
-          }}>{lbl}</button>
-        ))}
-      </div>
-
-      <div style={{minHeight:36,padding:"5px 16px",display:"flex",alignItems:"center"}}>
-        {hov&&hovR ? (
-          <div style={{display:"flex",gap:10,background:"#0a1520",border:"1px solid #122030",borderRadius:6,padding:"5px 14px",fontSize:10,flexWrap:"wrap",alignItems:"center"}}>
-            <span style={{color:SYM_C[hov.sym]||"#aaa",fontWeight:700,fontSize:12}}>{hov.sym}</span>
-            <span style={{color:"#2a4a60"}}>{hov.wk} ({hovR.ws}〜)</span>
-            <span style={{color:"#3a5a70"}}>│</span>
-            <span>📊 <b style={{color:"#00ffb3",fontSize:16}}>{hovScore!=null?Math.round(hovScore):"—"}</b>点</span>
-            <span style={{color:"#3a5a70"}}>│</span>
-            <span>H1avg: <b style={{color:"#aaccff"}}>{hovR.h1a!=null?hovR.h1a.toFixed(2):"—"}</b></span>
-            <span>H4≥20: <b style={{color:"#ffcc44"}}>{hovR.h4p20!=null?hovR.h4p20.toFixed(1):"—"}%</b></span>
-            <span>H4≥30: <b style={{color:"#ff88cc"}}>{hovR.h4p30!=null?hovR.h4p30.toFixed(1):"—"}%</b>
-              <span style={{fontSize:9,color:"#3a5a70",marginLeft:4}}>
-                (ボーナス×{hovR.h4p30!=null?(1+(hovR.h4p30/100)*0.5).toFixed(2):"—"})
-              </span>
-            </span>
-          </div>
-        ) : (
-          <span style={{fontSize:10,color:"#1a2e40"}}>セルにカーソルで詳細表示</span>
-        )}
-      </div>
-
-      <div ref={gridRef} style={{overflowX:"auto",padding:"0 16px 28px",WebkitOverflowScrolling:"touch"}}>
-        {dispSyms.map(sym=>(
-          <div key={sym} style={{marginBottom:view==="both"?24:14}}>
-            <div style={{fontSize:13,fontWeight:700,color:SYM_C[sym]||"#aaa",marginBottom:4,paddingLeft:100,letterSpacing:1}}>
-              {sym}
-            </div>
-            <table style={{borderCollapse:"separate",borderSpacing:2,minWidth:"max-content"}}>
-              <thead>
-                {sym===dispSyms[0]&&(
-                  <tr>
-                    <th style={{width:98,textAlign:"left",fontSize:9,color:"#2a4050",fontWeight:400,paddingBottom:5,paddingLeft:4}}></th>
-                    {weeks.map((wk,wi)=>{
-                      const isY = wk.endsWith("W01");
-                      const ws  = Object.values(RAW)[0]?.[wk]?.ws || "";
-                      const mon = ws ? parseInt(ws.slice(5,7))-1 : 0;
-                      return (
-                        <th key={wk} style={{width:24,textAlign:"center",fontSize:7,color:isY?"#5a8aaa":"#2a4050",fontWeight:isY?700:400,paddingBottom:5,borderLeft:isY?"1px solid #1a3050":"none"}}>
-                          {isY ? `'${wk.slice(2,4)}` : wi%4===0 ? ML[mon]?.slice(0,1)||"" : ""}
-                        </th>
-                      );
-                    })}
-                    <th style={{width:46,fontSize:9,color:"#2a4050",textAlign:"center",paddingLeft:8,borderLeft:"1px solid #1a3050",position:"sticky",right:0,background:"#060b10"}}>AVG</th>
-                  </tr>
-                )}
-              </thead>
-              <tbody>
-                {visRows.map((row)=>{
-                  const avg = rowAvg(sym,weeks,row.key);
-                  const {bg:avgBg,tx:avgTx} = row.colorFn(avg);
-                  const isScore = row.key==="score";
-                  return (
-                    <React.Fragment key={row.key}>
-                      <tr>
-                        <td style={{fontSize:isScore?10:9,fontWeight:isScore?700:500,color:isScore?"#7ab8d8":"#4a7a90",paddingRight:6,paddingLeft:4,whiteSpace:"nowrap",width:98}}>
-                          {row.label}
-                        </td>
-                        {weeks.map(wk=>{
-                          const val = getCellVal(sym,wk,row.key);
-                          const {bg,tx} = row.colorFn(val);
-                          const isY = wk.endsWith("W01");
-                          return (
-                            <td key={wk} className="cell"
-                              onMouseEnter={()=>setHov({sym,wk})}
-                              onMouseLeave={()=>setHov(null)}
-                              onClick={()=>setHov(h=>h?.sym===sym&&h?.wk===wk?null:{sym,wk})}
-                              style={{background:bg,width:24,height:row.h||20,textAlign:"center",fontSize:isScore?8:7,color:tx,fontWeight:isScore?700:600,borderRadius:2,borderLeft:isY?"1px solid #1a3050":"none"}}>
-                              {row.fmt(val)}
-                            </td>
-                          );
-                        })}
-                        <td style={{textAlign:"center",fontSize:isScore?11:9,fontWeight:700,paddingLeft:8,borderLeft:"1px solid #1a3050",background:avgBg,color:avgTx,position:"sticky",right:0,borderRadius:2,height:row.h||20}}>
-                          {row.fmt(avg)}
-                        </td>
-                      </tr>
-                      {isScore&&view==="both"&&<tr><td colSpan={weeks.length+2} style={{height:3}}></td></tr>}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
-      </div>
-
-      <div style={{padding:"0 16px 32px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:8,maxWidth:1100}}>
-        {[
-          {t:"📊 スコア設計",b:"MT5 iADX準拠データを使用。sqrt(H1norm x H4_20) x 0.85 がベース。H4_30はボーナス乗数（x1.0〜1.5）。"},
-          {t:"🎯 点数の目安",b:"80以上🔥最強 / 65以上→超強 / 50以上★候補 / 38以上→良い / 27以上→OK / 18以上→様子見 / 18未満→見送り"},
-          {t:"📡 データソース",b:"週次: MT5スクリプト出力CSV（H1 ADX28 / H4 ADX30）。日次: Twelve Data API（LINE配信用）。"},
-          {t:"🔍 操作方法",b:"スライダーで表示期間を変更。セルにカーソルでH4_30ボーナス乗数を確認。右端のAVGで期間平均スコアを比較。"},
-        ].map(({t,b})=>(
-          <div key={t} style={{background:"#0a1520",border:"1px solid #122030",borderRadius:6,padding:"10px 12px"}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#5a8aaa",marginBottom:4}}>{t}</div>
-            <div style={{fontSize:10,color:"#3a5a70",lineHeight:1.7}}>{b}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+// ── 初期化 ──
+window.onload = function() {{
+  document.getElementById('lStart').textContent = fmtWkLabel(WEEKS[0]) + ' (' + WEEKS[0] + ')';
+  document.getElementById('lEnd').textContent   = fmtWkLabel(WEEKS[WEEKS.length-1]) + ' (' + WEEKS[WEEKS.length-1] + ')';
+  // デフォルト: 直近26週表示
+  setRange(Math.max(0, WEEKS.length-26), WEEKS.length-1);
+  // デフォルト: スコア順
+  sortBy('score');
+  var wrap = document.getElementById('grid-wrap');
+  setTimeout(()=>{{ wrap.scrollLeft = wrap.scrollWidth; }}, 100);
+}};
 </script>
 </body>
 </html>"""
-
-
-# ── HTML生成メイン ────────────────────────────────────
-def generate_html(raw_by_sym: dict, recent_5: list) -> str:
-    now_jst = datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")
-
-    # 全週リスト（全銘柄のunion）
-    all_weeks_set = set()
-    for sym_data in raw_by_sym.values():
-        all_weeks_set.update(sym_data.keys())
-    all_weeks = sorted(all_weeks_set)
-
-    # SYMBOLS に存在する銘柄だけ
-    active_syms = [s for s in SYMBOLS if s in raw_by_sym]
-
-    raw_json    = json.dumps(raw_by_sym,  ensure_ascii=False)
-    weeks_json  = json.dumps(all_weeks,   ensure_ascii=False)
-    syms_json   = json.dumps(active_syms, ensure_ascii=False)
-    recent_json = json.dumps(recent_5,    ensure_ascii=False)
-
-    html = HTML_TEMPLATE
-    html = html.replace("<<<RAW_JSON>>>",    raw_json)
-    html = html.replace("<<<WEEKS_JSON>>>",  weeks_json)
-    html = html.replace("<<<SYMS_JSON>>>",   syms_json)
-    html = html.replace("<<<RECENT_JSON>>>", recent_json)
-    html = html.replace("<<<UPDATED_AT>>>",  now_jst)
     return html
 
 
 def main():
-    print("=== generate_html.py v2 開始 ===")
-
-    # CSV読み込み（週次データ・MT5準拠）
-    print(f"週次CSVを読み込み中: {CSV_PATH}")
-    raw_by_sym = load_csv_weekly(CSV_PATH)
-
-    if not raw_by_sym:
-        print("[WARN] CSVデータなし。空のHTMLを生成します。")
-        raw_by_sym = {}
-
-    # 日次スコア読み込み（直近5日パネル用）
-    recent_5 = load_recent_5(DATA_PATH)
-    print(f"日次スコア: {len(recent_5)} 件")
-
+    print("=== generate_html.py v3 開始 ===")
+    raw_data = load_csv(CSV_PATH)
+    recent5  = load_recent5(DATA_PATH)
+    print(f"日次スコア: {len(recent5)}件")
     os.makedirs("docs", exist_ok=True)
-    html = generate_html(raw_by_sym, recent_5)
+    html = generate_html(raw_data, recent5)
     with open(HTML_PATH, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[OK] {HTML_PATH} 生成完了（{len(html)//1024}KB）")
+    print(f"[OK] {HTML_PATH} 生成完了 ({len(html)//1024}KB)")
     print("=== 完了 ===")
 
 

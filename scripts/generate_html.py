@@ -1,60 +1,94 @@
 """
-generate_html.py
-data/scores.json（日次）→ 週次集計 → docs/index.html（ヒートマップ）生成
-f-string内のJSX三項演算子衝突を回避するため、
-HTMLテンプレートを通常文字列で定義し、プレースホルダー置換方式を採用
+generate_html.py v2
+MT5出力CSV（data/adx_weekly.csv）を読み込んでヒートマップHTML生成
++ data/scores.json（日次）を読んで直近5日パネルを生成
+
+【変更点】
+- 週次データはTwelve Data APIではなくMT5出力CSVを正解データとして使用
+- APIはLINE配信用の日次スコアのみに使用
+- スコアのフロア値を設計書準拠の0.1に戻す
 """
 
 import json
 import os
+import math
+import csv
+import io
 from datetime import datetime, timezone, timedelta
 
-DATA_PATH = "data/scores.json"
+CSV_PATH  = "data/adx_weekly.csv"   # MT5出力CSVのパス
+DATA_PATH = "data/scores.json"      # 日次スコア（LINE用）
 HTML_PATH = "docs/index.html"
 JST       = timezone(timedelta(hours=9))
 
 SYMBOLS = ["XAUUSD"]
-# SYMBOLS = ["XAUUSD", "USDCAD", "AUDUSD", "USDJPY"]  # 将来拡張用
 
 
-# ── 日付 → ISO週ラベル（月曜起算）────────────────────
-def to_week_key(date_str: str) -> str:
-    dt  = datetime.strptime(date_str, "%Y-%m-%d")
-    iso = dt.isocalendar()
-    return f"{iso[0]}-W{iso[1]:02d}"
+# ── MT5 CSV読み込み ───────────────────────────────────
+def load_csv_weekly(csv_path: str) -> dict:
+    """
+    ADX_Weekly_Above_v2.csv を読み込んで
+    { "XAUUSD": { "2025-W03": {"ws":"2025.01.13","h1a":26.63,"h4p20":100.0,"h4p30":70.0}, ... } }
+    の形式に変換する
+    """
+    if not os.path.exists(csv_path):
+        print(f"[WARN] CSVファイルが見つかりません: {csv_path}")
+        return {}
 
+    # UTF-16 LE（MT5の出力形式）を読み込む
+    with open(csv_path, "rb") as f:
+        raw = f.read()
 
-def week_start(week_key: str) -> str:
-    year, w  = week_key.split("-W")
-    monday   = datetime.fromisocalendar(int(year), int(w), 1)
-    return monday.strftime("%Y.%m.%d")
-
-
-# ── 日次 → 週次集計 ──────────────────────────────────
-def aggregate_to_weekly(records: list[dict], symbol: str) -> dict:
-    by_week: dict[str, list[dict]] = {}
-    for r in records:
-        if r.get("symbol", "XAUUSD") != symbol:
-            continue
-        wk = to_week_key(r["date"])
-        by_week.setdefault(wk, []).append(r)
+    # エンコーディング自動判定
+    try:
+        text = raw.decode("utf-16-le", errors="replace").lstrip("\ufeff")
+    except Exception:
+        text = raw.decode("utf-8", errors="replace").lstrip("\ufeff")
 
     result = {}
-    for wk, recs in sorted(by_week.items()):
-        h1_vals = [r["h1_avg_adx"] for r in recs]
-        h4p20   = [r["h4_pct20"]   for r in recs]
-        h4p30   = [r["h4_pct30"]   for r in recs]
-        result[wk] = {
-            "ws":    week_start(wk),
-            "h1a":   round(sum(h1_vals) / len(h1_vals), 2),
-            "h4p20": round(sum(h4p20)   / len(h4p20),   1),
-            "h4p30": round(sum(h4p30)   / len(h4p30),   1),
+    reader = csv.DictReader(io.StringIO(text))
+
+    for row in reader:
+        sym  = row.get("Symbol", "").strip()
+        week = row.get("Week",   "").strip()
+        ws   = row.get("WeekStart", "").strip()
+        if not sym or not week:
+            continue
+
+        try:
+            h1a   = float(row.get("H1_AvgADX",      0))
+            h4p20 = float(row.get("H4_Pct_Above20", 0))
+            h4p30 = float(row.get("H4_Pct_Above30", 0))
+        except (ValueError, TypeError):
+            continue
+
+        if sym not in result:
+            result[sym] = {}
+        result[sym][week] = {
+            "ws":    ws,
+            "h1a":   round(h1a, 2),
+            "h4p20": round(h4p20, 1),
+            "h4p30": round(h4p30, 1),
         }
+
+    for sym, weeks in result.items():
+        print(f"  CSV読み込み: {sym} {len(weeks)}週分")
+
     return result
 
 
-# ── HTMLテンプレート（プレースホルダー: <<<VAR>>>）─────
-# JSX内の {} は全てそのまま書ける（f-stringを使わないため）
+# ── 日次スコア読み込み（LINE用直近5日）──────────────
+def load_recent_5(data_path: str) -> list[dict]:
+    if not os.path.exists(data_path):
+        return []
+    with open(data_path, encoding="utf-8") as f:
+        records = json.load(f)
+    # 平日のみ、直近5件
+    weekday = [r for r in records if datetime.strptime(r["date"], "%Y-%m-%d").weekday() < 5]
+    return weekday[-5:] if len(weekday) >= 5 else weekday
+
+
+# ── HTMLテンプレート ──────────────────────────────────
 HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -78,26 +112,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 </head>
 <body>
 <div id="root"></div>
-
 <script>
-// ── 自動生成データ（GitHub Actions が毎日更新）──
 const RAW        = <<<RAW_JSON>>>;
 const ALL_WEEKS  = <<<WEEKS_JSON>>>;
 const ALL_SYMS   = <<<SYMS_JSON>>>;
 const RECENT_5   = <<<RECENT_JSON>>>;
 const UPDATED_AT = "<<<UPDATED_AT>>>";
 </script>
-
 <script type="text/babel">
 const {useState, useMemo, useEffect, useRef} = React;
-
-const SYM_C = {
-  XAUUSD:"#ffd700", USDCAD:"#44ccff",
-  AUDUSD:"#88ffcc", USDJPY:"#ff99cc"
-};
+const SYM_C = {XAUUSD:"#ffd700",USDCAD:"#44ccff",AUDUSD:"#88ffcc",USDJPY:"#ff99cc"};
 const ML = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-// ── ADXスコア計算（設計書準拠）──
+// ADXスコア（MT5設計書準拠・フロア0.1）
 function calcScore(h1a, h4p20, h4p30) {
   if(h1a==null||h4p20==null||h4p30==null) return null;
   const h1norm = Math.max(0, Math.min(100, (h1a - 10) / 30 * 100));
@@ -108,7 +135,6 @@ function calcScore(h1a, h4p20, h4p30) {
   return Math.min(100, base * bonus);
 }
 
-// ── カラー関数 ──
 function scoreColor(s) {
   if(s==null) return {bg:"#0c1018",tx:"#1e2e3e"};
   if(s>=80)   return {bg:"#ff4400",tx:"#fff"};
@@ -155,32 +181,25 @@ function fmtWk(wk) {
   const ws = Object.values(RAW)[0]?.[wk]?.ws || "";
   return ws ? ws.slice(2,10).replace(/\./g,"/") : wk.slice(-3);
 }
-
 function getCellVal(sym, wk, key) {
   const r = RAW[sym]?.[wk];
   if(!r) return null;
   if(key==="score") return calcScore(r.h1a, r.h4p20, r.h4p30);
   return r[key] ?? null;
 }
-
 function rowAvg(sym, weeks, key) {
   const vals = weeks.map(w=>getCellVal(sym,w,key)).filter(v=>v!=null);
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
 }
 
-// ── 直近5日スコアラベル ──
 function scoreLabel(s) {
   if(s==null) return "—";
-  if(s>=80) return "最強🔥";
-  if(s>=65) return "超強✅";
-  if(s>=50) return "★候補";
-  if(s>=38) return "良い";
-  if(s>=27) return "OK";
-  if(s>=18) return "様子見⚠️";
+  if(s>=80) return "最強🔥"; if(s>=65) return "超強✅";
+  if(s>=50) return "★候補";  if(s>=38) return "良い";
+  if(s>=27) return "OK";     if(s>=18) return "様子見⚠️";
   return "NG❌";
 }
 
-// ── 直近5日パネル ──
 function RecentPanel() {
   if(!RECENT_5||RECENT_5.length===0) return null;
   return (
@@ -218,7 +237,6 @@ function RecentPanel() {
   );
 }
 
-// ── メインアプリ ──
 function App() {
   const [symFilter, setSymFilter] = useState("ALL");
   const [range, setRange]         = useState([Math.max(0,ALL_WEEKS.length-26), ALL_WEEKS.length-1]);
@@ -249,15 +267,13 @@ function App() {
 
   return (
     <div style={{background:"#060b10",minHeight:"100vh"}}>
-
-      {/* ヘッダー */}
       <div style={{background:"linear-gradient(135deg,#0a1828,#060b10)",borderBottom:"1px solid #122030",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
         <div>
           <div style={{fontSize:9,color:"#2a4a60",letterSpacing:2,marginBottom:2}}>
-            ADX Score = sqrt(H1norm × H4_20) × 0.85 × (1 + H4_30×0.5)
+            ADX Score = sqrt(H1norm x H4_20) x 0.85 x (1 + H4_30x0.5) | データ: MT5 iADX準拠
           </div>
           <div style={{fontSize:18,fontWeight:700,color:"#d8f0ff"}}>⚡ XAUUSD ADX Score Dashboard</div>
-          <div style={{fontSize:9,color:"#2a4a60",marginTop:2}}>最終更新: {UPDATED_AT} | {ALL_WEEKS.length}週のデータ蓄積</div>
+          <div style={{fontSize:9,color:"#2a4a60",marginTop:2}}>最終更新: {UPDATED_AT} | {ALL_WEEKS.length}週のデータ</div>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           <button style={Btn(view==="score","#00aa66")}  onClick={()=>setView("score")}>スコアのみ</button>
@@ -266,10 +282,8 @@ function App() {
         </div>
       </div>
 
-      {/* 直近5日パネル */}
       <RecentPanel/>
 
-      {/* 銘柄フィルター + 凡例 */}
       <div style={{background:"#0a1520",borderBottom:"1px solid #122030",padding:"8px 16px",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:10,color:"#3a5a70"}}>銘柄:</span>
         {["ALL",...ALL_SYMS].map(s=>(
@@ -292,7 +306,6 @@ function App() {
         </div>
       </div>
 
-      {/* 期間スライダー */}
       <div style={{background:"#07101a",borderBottom:"1px solid #0d1e2e",padding:"8px 16px",display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
         <span style={{fontSize:10,color:"#3a5a70",whiteSpace:"nowrap"}}>開始:</span>
         <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:150,maxWidth:300}}>
@@ -315,7 +328,6 @@ function App() {
         ))}
       </div>
 
-      {/* ツールチップ */}
       <div style={{minHeight:36,padding:"5px 16px",display:"flex",alignItems:"center"}}>
         {hov&&hovR ? (
           <div style={{display:"flex",gap:10,background:"#0a1520",border:"1px solid #122030",borderRadius:6,padding:"5px 14px",fontSize:10,flexWrap:"wrap",alignItems:"center"}}>
@@ -333,11 +345,10 @@ function App() {
             </span>
           </div>
         ) : (
-          <span style={{fontSize:10,color:"#1a2e40"}}>セルにカーソルで詳細表示（H4_30ボーナス乗数も確認できます）</span>
+          <span style={{fontSize:10,color:"#1a2e40"}}>セルにカーソルで詳細表示</span>
         )}
       </div>
 
-      {/* ヒートマップグリッド */}
       <div ref={gridRef} style={{overflowX:"auto",padding:"0 16px 28px",WebkitOverflowScrolling:"touch"}}>
         {dispSyms.map(sym=>(
           <div key={sym} style={{marginBottom:view==="both"?24:14}}>
@@ -402,12 +413,11 @@ function App() {
         ))}
       </div>
 
-      {/* ガイド */}
       <div style={{padding:"0 16px 32px",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:8,maxWidth:1100}}>
         {[
-          {t:"📊 スコア設計",b:"sqrt(H1norm x H4_20) x 0.85 がベース。H4_30はボーナス乗数（x1.0〜1.5）。H4_30=0でも死なない、H4_30が高いと明確に加点。"},
-          {t:"🎯 点数の目安",b:"80以上🔥 / 65以上→超強 / 50以上★候補 / 38以上→良い / 27以上→OK / 18以上→様子見 / 18未満→見送り"},
-          {t:"📡 状態監視",b:"H4_30が0でもH1+H4_20が強ければ中スコア。H4_30が上がってきたらボーナス加点でスコア急上昇 → シグナル前兆として活用。"},
+          {t:"📊 スコア設計",b:"MT5 iADX準拠データを使用。sqrt(H1norm x H4_20) x 0.85 がベース。H4_30はボーナス乗数（x1.0〜1.5）。"},
+          {t:"🎯 点数の目安",b:"80以上🔥最強 / 65以上→超強 / 50以上★候補 / 38以上→良い / 27以上→OK / 18以上→様子見 / 18未満→見送り"},
+          {t:"📡 データソース",b:"週次: MT5スクリプト出力CSV（H1 ADX28 / H4 ADX30）。日次: Twelve Data API（LINE配信用）。"},
           {t:"🔍 操作方法",b:"スライダーで表示期間を変更。セルにカーソルでH4_30ボーナス乗数を確認。右端のAVGで期間平均スコアを比較。"},
         ].map(({t,b})=>(
           <div key={t} style={{background:"#0a1520",border:"1px solid #122030",borderRadius:6,padding:"10px 12px"}}>
@@ -419,58 +429,56 @@ function App() {
     </div>
   );
 }
-
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>"""
 
 
-# ── HTMLを生成してプレースホルダーを置換 ─────────────
-def generate_html(records: list[dict]) -> str:
-    now_jst  = datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")
-    recent_5 = records[-5:] if len(records) >= 5 else records
+# ── HTML生成メイン ────────────────────────────────────
+def generate_html(raw_by_sym: dict, recent_5: list) -> str:
+    now_jst = datetime.now(JST).strftime("%Y-%m-%d %H:%M JST")
 
-    # 週次集計
-    raw_by_sym    = {}
+    # 全週リスト（全銘柄のunion）
     all_weeks_set = set()
-    for sym in SYMBOLS:
-        weekly = aggregate_to_weekly(records, sym)
-        raw_by_sym[sym] = weekly
-        all_weeks_set.update(weekly.keys())
-
+    for sym_data in raw_by_sym.values():
+        all_weeks_set.update(sym_data.keys())
     all_weeks = sorted(all_weeks_set)
 
-    # JSON文字列化
-    raw_json    = json.dumps(raw_by_sym, ensure_ascii=False)
-    weeks_json  = json.dumps(all_weeks,  ensure_ascii=False)
-    syms_json   = json.dumps(SYMBOLS,    ensure_ascii=False)
-    recent_json = json.dumps(recent_5,   ensure_ascii=False)
+    # SYMBOLS に存在する銘柄だけ
+    active_syms = [s for s in SYMBOLS if s in raw_by_sym]
 
-    # プレースホルダー置換
+    raw_json    = json.dumps(raw_by_sym,  ensure_ascii=False)
+    weeks_json  = json.dumps(all_weeks,   ensure_ascii=False)
+    syms_json   = json.dumps(active_syms, ensure_ascii=False)
+    recent_json = json.dumps(recent_5,    ensure_ascii=False)
+
     html = HTML_TEMPLATE
     html = html.replace("<<<RAW_JSON>>>",    raw_json)
     html = html.replace("<<<WEEKS_JSON>>>",  weeks_json)
     html = html.replace("<<<SYMS_JSON>>>",   syms_json)
     html = html.replace("<<<RECENT_JSON>>>", recent_json)
     html = html.replace("<<<UPDATED_AT>>>",  now_jst)
-
     return html
 
 
-# ── メイン ───────────────────────────────────────────
 def main():
-    print("=== generate_html.py 開始 ===")
-    if not os.path.exists(DATA_PATH):
-        print("[WARN] scores.json が存在しません。空HTMLを生成します。")
-        records = []
-    else:
-        with open(DATA_PATH, encoding="utf-8") as f:
-            records = json.load(f)
-    print(f"  {len(records)} 件のデータを読み込み")
+    print("=== generate_html.py v2 開始 ===")
+
+    # CSV読み込み（週次データ・MT5準拠）
+    print(f"週次CSVを読み込み中: {CSV_PATH}")
+    raw_by_sym = load_csv_weekly(CSV_PATH)
+
+    if not raw_by_sym:
+        print("[WARN] CSVデータなし。空のHTMLを生成します。")
+        raw_by_sym = {}
+
+    # 日次スコア読み込み（直近5日パネル用）
+    recent_5 = load_recent_5(DATA_PATH)
+    print(f"日次スコア: {len(recent_5)} 件")
 
     os.makedirs("docs", exist_ok=True)
-    html = generate_html(records)
+    html = generate_html(raw_by_sym, recent_5)
     with open(HTML_PATH, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"[OK] {HTML_PATH} 生成完了（{len(html)//1024}KB）")

@@ -1294,7 +1294,7 @@
   {
     "date": "2026-04-13",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 11.08,
+    "h1_avg_adx": 10.91,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
     "score": 4.2,
@@ -1304,17 +1304,17 @@
   {
     "date": "2026-04-14",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 13.57,
+    "h1_avg_adx": 13.49,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
-    "score": 6.6,
+    "score": 6.5,
     "h1_bars": 24,
     "h4_bars": 6
   },
   {
     "date": "2026-04-15",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 22.22,
+    "h1_avg_adx": 22.18,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
     "score": 12.1,
@@ -1324,10 +1324,20 @@
   {
     "date": "2026-04-16",
     "symbol": "XAUUSD",
-    "h1_avg_adx": 21.66,
+    "h1_avg_adx": 21.64,
     "h4_pct20": 0.0,
     "h4_pct30": 0.0,
     "score": 11.8,
+    "h1_bars": 24,
+    "h4_bars": 6
+  },
+  {
+    "date": "2026-04-17",
+    "symbol": "XAUUSD",
+    "h1_avg_adx": 14.16,
+    "h4_pct20": 0.0,
+    "h4_pct30": 0.0,
+    "score": 7.1,
     "h1_bars": 24,
     "h4_bars": 6
   }

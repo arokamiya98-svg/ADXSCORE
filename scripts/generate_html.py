@@ -11,7 +11,21 @@ MT5出力CSV → 多銘柄ヒートマップHTML生成
 import json, os, csv, io, math
 from datetime import datetime, timezone, timedelta
 
-CSV_PATH  = "data/adx_weekly.csv"
+# CSV_PATH: ファイル名の大文字小文字ゆらぎに対応（GitHub Linuxは区別する）
+def _find_csv():
+    candidates = [
+        "data/adx_weekly.csv",
+        "data/adx_Weekly.csv",
+        "data/ADX_Weekly.csv",
+        "data/ADX_Weekly_Above_v2.csv",
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            print(f"  CSVパス自動検出: {p}")
+            return p
+    return "data/adx_weekly.csv"
+
+CSV_PATH  = _find_csv()
 DATA_PATH = "data/scores.json"
 HTML_PATH = "docs/index.html"
 JST       = timezone(timedelta(hours=9))

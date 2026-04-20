@@ -1,4 +1,4 @@
-name: ADX Score Daily
+name: ADX Score Daily v2
 
 on:
   schedule:
@@ -24,14 +24,17 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Fetch & Calculate ADX Score
+      # ── v1 + v3 スコア計算（fetch_and_calc_v2.py に移行）──
+      - name: Fetch & Calculate ADX Score (v1 + v3)
         env:
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
-        run: python scripts/fetch_and_calc.py
+        run: python scripts/fetch_and_calc_v2.py
 
+      # ── HTML レポート生成 ──
       - name: Generate HTML Report
         run: python scripts/generate_html.py
 
+      # ── コミット & プッシュ ──
       - name: Commit & Push
         run: |
           git config user.name  "github-actions[bot]"
@@ -40,9 +43,10 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: daily ADX score update $(date +'%Y-%m-%d')"
           git push
 
-      - name: Send LINE Notification
+      # ── LINE 2ページ配信 ──
+      - name: Send LINE Notification (v3 + v1 carousel)
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID:              ${{ secrets.LINE_USER_ID }}
-          GITHUB_PAGES_URL:          ${{ secrets.PAGES_URL }}
-        run: python scripts/send_line.py
+          GITHUB_PAGES_URL:          ${{ secrets.GITHUB_PAGES_URL }}
+        run: python scripts/send_line_v2.py

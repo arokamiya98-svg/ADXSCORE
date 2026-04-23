@@ -21,7 +21,7 @@ from datetime import datetime, timezone, timedelta
 DATA_PATH    = "data/scores.json"
 LINE_TOKEN   = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
 LINE_USER_ID = os.environ["LINE_USER_ID"]
-PAGES_URL    = os.environ.get("GITHUB_PAGES_URL", "https://your-user.github.io/your-repo/")
+PAGES_URL    = os.environ.get("PAGES_URL", "https://your-user.github.io/your-repo/")
 
 JST = timezone(timedelta(hours=9))
 

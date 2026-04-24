@@ -1464,11 +1464,11 @@
     "h4_avg_adx": 17.68,
     "vel_pos_pct": 100.0,
     "vel_neg_pct": 0.0,
-    "atr_ratio": 0.821,
-    "atr_delta": 4.9,
-    "atr_phase": "BOTTOM_CONT",
-    "score_v3": 55.0,
+    "atr_ratio": 0.823,
+    "atr_delta": 5.2,
+    "atr_phase": "BOTTOM_TURN",
+    "score_v3": 48.0,
     "band_v3": "WATCH",
-    "comment_v3": "BOTTOM_WAIT"
+    "comment_v3": "NORMAL"
   }
 ]
